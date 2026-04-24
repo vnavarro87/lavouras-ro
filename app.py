@@ -60,6 +60,11 @@ with st.sidebar:
 
 # --- HEADER E KPIs TOTAIS (O IMPACTO) ---
 st.title("Agro Intelligence Hub | Rondônia")
+st.markdown("Análise Estratégica de Produção e Competitividade Setorial")
+
+# Lógica de Zoom e Centro do Mapa (Correção de Erro)
+zoom_atual = 5.2
+centro_atual = {"lat": -10.9, "lon": -62.8}
 
 # Cálculo de Métricas Estaduais
 pib_total = df['PIB_Agro_Mil'].sum() / 1e6
