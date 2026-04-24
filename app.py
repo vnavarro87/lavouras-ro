@@ -51,7 +51,7 @@ with st.sidebar:
     st.markdown("---")
     
     municipios_lista = ["Rondônia (Geral)"] + sorted(df['Municipio'].unique().tolist())
-    mun_selecionado = st.selectbox("Foco Regional:", municipios_lista)
+    mun_selecionado = st.selectbox("Foco Regional:", municipios_lista, key="sel_sidebar_municipio")
     
     st.markdown("---")
     st.subheader("Fonte dos Dados")
@@ -89,7 +89,7 @@ with tab1:
     
     with col_mapa:
         st.subheader("Distribuição Espacial da Produção")
-        cultura_mapa = st.selectbox("Selecione a Camada de Dados:", ["Soja", "Milho", "Cafe", "Cacau", "Gado", "Leite"])
+        cultura_mapa = st.selectbox("Selecione a Camada de Dados:", ["Soja", "Milho", "Cafe", "Cacau", "Gado", "Leite"], key="sel_mapa_camada")
         
         # Lógica de coluna dinâmica para o mapa
         col_map = f"{cultura_mapa}_Qtd_T" if cultura_mapa not in ["Gado", "Leite"] else (f"{cultura_mapa}_Cabecas" if cultura_mapa=="Gado" else f"{cultura_mapa}_Mil_Litros")
@@ -124,8 +124,8 @@ with tab2:
     
     c1, c2 = st.columns([1, 4])
     with c1:
-        cultura = st.selectbox("Cultura:", ["Soja", "Milho", "Cafe", "Cacau"])
-        metrica = st.selectbox("Métrica:", ["Quantidade", "Produtividade", "Valor", "Perda"])
+        cultura = st.selectbox("Cultura:", ["Soja", "Milho", "Cafe", "Cacau"], key="sel_perf_cultura")
+        metrica = st.selectbox("Métrica:", ["Quantidade", "Produtividade", "Valor", "Perda"], key="sel_perf_metrica")
         
         # Mapeamento de colunas
         map_cols = {
@@ -242,7 +242,7 @@ with tab2:
     st.subheader("🐄 Análise de Pecuária")
     c_p1, c_p2 = st.columns([3, 1])
     with c_p2:
-        finalidade = st.selectbox("Analisar por:", ["Corte (Rebanho)", "Leite (Produção)"])
+        finalidade = st.selectbox("Analisar por:", ["Corte (Rebanho)", "Leite (Produção)"], key="sel_pecuaria_finalidade")
         col_ativa_gado = "Gado_Cabecas" if "Corte" in finalidade else "Leite_Mil_Litros"
         cor_gado = "YlOrBr" if "Corte" in finalidade else "GnBu"
         st.metric(f"Total RO ({finalidade})", f"{df[col_ativa_gado].sum():,.0f}")
