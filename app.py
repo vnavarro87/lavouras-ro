@@ -426,8 +426,17 @@ with tab3:
 
 # --- FOOTER ---
 st.divider()
-st.subheader("Consultoria de Dados Agro")
+st.subheader("Consultoria Analítica de Dados")
 st.info("Plataforma analítica baseada em dados oficiais do IBGE. Foco em precisão e transparência setorial.")
+
+# Sugestões de Análise para o Usuário
+with st.expander("Exemplos de consultas estratégicas para a I.A."):
+    st.markdown("""
+    - Quais são os municípios com maior eficiência técnica (Kg/Ha) no Café em Rondônia?
+    - Analise os municípios com maior dependência econômica de uma única cultura.
+    - Qual a representatividade da Pecuária no PIB Agropecuário do estado?
+    - Compare o perfil produtivo e econômico entre Vilhena e Porto Velho.
+    """)
 
 if "messages" not in st.session_state: st.session_state.messages = []
 for msg in st.session_state.messages:
