@@ -257,7 +257,8 @@ with tab2:
     
     df_perf = df.copy()
     col_prod = f"{cultura}_Prod_KgHa"
-    col_area = f"{cultura}_AreaPlant_Ha"
+    # Fallback para Area Colhida caso a Plantada não exista no IBGE para aquela cultura
+    col_area = f"{cultura}_AreaPlant_Ha" if f"{cultura}_AreaPlant_Ha" in df.columns else f"{cultura}_AreaColh_Ha"
     col_qtd = f"{cultura}_Qtd_T"
     
     if col_prod in df_perf.columns and col_area in df_perf.columns:
