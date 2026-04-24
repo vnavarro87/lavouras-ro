@@ -48,13 +48,11 @@ df, geojson = carregar_dados()
 with st.sidebar:
     st.title("🛡️ Agro Intelligence")
     st.markdown("Dashboard Analítico de Rondônia")
-    st.image("https://www.rondonia.ro.gov.br/wp-content/uploads/2021/04/logo-ro.png", width=150)
-    st.title("🗺️ Agro Intelligence RO")
     st.markdown("---")
     
     # Seletor de Município principal
     municipios_lista = ["Rondônia (Geral)"] + sorted(df['Municipio'].unique().tolist())
-    mun_selecionado = st.selectbox("Selecione o Município para Detalhes:", municipios_lista)
+    mun_selecionado = st.selectbox("📍 Selecione o Município:", municipios_lista)
     
     st.markdown("---")
     st.subheader("📚 Fonte dos Dados")
