@@ -46,28 +46,28 @@ df, geojson = carregar_dados()
 
 # --- 2. BARRA LATERAL ---
 with st.sidebar:
-    st.title("🛡️ Agro Intelligence")
+    st.title("Agro Intelligence")
     st.markdown("Dashboard Analítico de Rondônia")
     st.markdown("---")
     
     # Seletor de Município principal
     municipios_lista = ["Rondônia (Geral)"] + sorted(df['Municipio'].unique().tolist())
-    mun_selecionado = st.selectbox("📍 Selecione o Município:", municipios_lista)
+    mun_selecionado = st.selectbox("Selecione o Município:", municipios_lista)
     
     st.markdown("---")
-    st.subheader("📚 Fonte dos Dados")
+    st.subheader("Fonte dos Dados")
     st.caption("""
     Dados oficiais via API SIDRA (IBGE):
-    - **Agricultura:** PAM 2023 (Tab 1612/1613)
-    - **Pecuária:** PPM 2023 (Tab 3939)
-    - **Leite:** PPM 2023 (Tab 74)
-    - **PIB:** Tabela 5938 (Base 2021)
+    - Agricultura: PAM 2023 (Tab 1612/1613)
+    - Pecuária: PPM 2023 (Tab 3939)
+    - Leite: PPM 2023 (Tab 74)
+    - PIB: Tabela 5938 (Base 2021)
     """)
-    st.info("💡 Auditoria 100% verificada.")
+    st.info("Auditoria técnica verificada.")
 
 # --- HEADER PRINCIPAL ---
-st.title("📈 Agro Intelligence Hub | Rondônia")
-st.markdown(f"Análise Estratégica de Produção e Competitividade - **Safra 2023**")
+st.title("Agro Intelligence Hub | Rondônia")
+st.markdown(f"Análise Estratégica de Produção e Competitividade - Safra 2023")
 
 # Lógica de Zoom e Centro do Mapa
 zoom_atual = 5.2
@@ -86,7 +86,7 @@ if mun_selecionado != "Rondônia (Geral)":
     f_leite = f"{mun_df['Leite_Mil_Litros']:,.0f} mil L"
 
 # --- TABS ---
-tab1, tab2, tab3 = st.tabs(["🌾 Agricultura", "🐄 Pecuária & Leite", "🧠 Inteligência & Exportação"])
+tab1, tab2, tab3 = st.tabs(["Agricultura", "Pecuária e Leite", "Inteligência Estratégica"])
 
 # --- ABA 1: AGRICULTURA ---
 with tab1:
@@ -220,9 +220,9 @@ with tab2:
 
 # --- ABA 3: INTELIGÊNCIA ESTRATÉGICA ---
 with tab3:
-    st.header("📊 Inteligência de Mercado & Competitividade")
+    st.header("Inteligência de Mercado e Competitividade")
     
-    # 1. ANÁLISE DE DIVERSIFICAÇÃO (Calculada na hora)
+    # 1. ANÁLISE DE DIVERSIFICAÇÃO
     # Calculamos o quanto cada município é diversificado (Herfindahl-Hirschman Index invertido)
     cols_prod = ['Soja_Qtd_T', 'Milho_Qtd_T', 'Cafe_Qtd_T', 'Cacau_Qtd_T']
     df_div = df.copy()
@@ -239,7 +239,7 @@ with tab3:
     
     col_div1, col_div2 = st.columns([2, 1])
     with col_div1:
-        st.subheader("🛡️ Resiliência: Índice de Diversificação")
+        st.subheader("Resiliência Econômica: Índice de Diversificação")
         fig_div = px.choropleth_mapbox(
             df_div, geojson=geojson, locations="Municipio", featureidkey="properties.name",
             color="Indice_Diversificacao", color_continuous_scale="RdYlGn",
@@ -258,8 +258,8 @@ with tab3:
     st.divider()
 
     # 2. SIMULADOR DE IMPACTO ECONÔMICO (VBP DINÂMICO)
-    st.subheader("💰 Simulador de Valor Bruto da Produção (VBP)")
-    st.write("Ajuste os preços de mercado para ver o impacto estimado no PIB Agro de Rondônia:")
+    st.subheader("Valor Bruto da Produção (VBP)")
+    st.write("Simulação de impacto financeiro baseado em variações de mercado:")
     
     c_s1, c_s2, c_s3, c_s4 = st.columns(4)
     p_soja = c_s1.number_input("Preço Soja (Saca/60kg)", 100, 250, 135)
@@ -280,18 +280,18 @@ with tab3:
     
     # 3. LOGÍSTICA E EXPORTAÇÃO (ARCO NORTE)
     st.divider()
-    st.subheader("🚢 Logística: O Corredor do Rio Madeira")
+    st.subheader("Logística Estratégica: Corredor Rio Madeira")
     col_log1, col_log2 = st.columns([1, 1])
     
     with col_log1:
         st.markdown("""
-        **Porto Velho: O Hub Estratégico**
-        Rondônia exporta a maior parte de sua soja e milho via **Porto Velho**, utilizando a hidrovia do Rio Madeira.
-        - **Redução de Custo:** Até 30% mais barato que portos do sul/sudeste.
-        - **Destinos:** China (55%), Europa (20%), Oriente Médio (15%).
-        - **Capacidade:** Mais de 10 milhões de toneladas/ano.
+        **Hub Logístico de Porto Velho**
+        O escoamento da produção de Rondônia ocorre predominantemente via Porto Velho, utilizando a hidrovia do Rio Madeira.
+        - Redução de custos operacionais em comparação aos portos do Sul.
+        - Destinos principais: Ásia e Europa.
+        - Capacidade instalada superior a 10 milhões de toneladas/ano.
         """)
-        st.success("📍 **Ponto Crítico:** A dragagem do Rio Madeira é vital para manter a competitividade no período de seca.")
+        st.success("Nota Técnica: A manutenção do calado no Rio Madeira é crítica para a competitividade logística estadual.")
 
     with col_log2:
         # Gráfico de Projeção Logística
@@ -303,38 +303,38 @@ with tab3:
         fig_log.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font_color="white")
         st.plotly_chart(fig_log, use_container_width=True)
 
-    # 4. MONITOR DE SAZONALIDADE E RISCOS (NOVO)
+    # 4. MONITOR DE SAZONALIDADE E RISCOS
     st.divider()
-    st.subheader("📅 Sazonalidade & Riscos Climáticos")
+    st.subheader("Análise de Sazonalidade e Riscos Setoriais")
     
     meses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"]
-    mes_sel = st.select_slider("Selecione o mês para análise de risco:", options=meses, value="Janeiro")
+    mes_sel = st.select_slider("Selecione o período para análise:", options=meses, value="Janeiro")
 
-    # Dados de Calendário e Riscos (Conhecimento especializado de RO)
+    # Calendário Técnico
     calendario = {
-        "Janeiro": {"Soja": "Crescimento/Colheita", "Milho": "Preparo Solo", "Cafe": "Crescimento", "Chuva": 300, "Risco": "⚠️ Ferrugem Asiática (Soja) / Excesso de Chuva na colheita precoce."},
-        "Fevereiro": {"Soja": "Colheita Intensa", "Milho": "Plantio (Safrinha)", "Cafe": "Crescimento", "Chuva": 280, "Risco": "⚠️ Logística travada por chuvas / Janela curta para o Milho."},
-        "Março": {"Soja": "Fim da Colheita", "Milho": "Crescimento", "Cafe": "Maturação", "Chuva": 250, "Risco": "⚠️ Lagarta do Cartucho (Milho)."},
-        "Abril": {"Soja": "Vazio Sanitário", "Milho": "Crescimento", "Cafe": "Início Colheita", "Chuva": 150, "Risco": "⚠️ Início da transição para seca / Cigarrinha no Milho."},
-        "Maio": {"Soja": "Vazio Sanitário", "Milho": "Maturação", "Cafe": "Colheita Intensa", "Chuva": 80, "Risco": "⚠️ Geadas tardias (Raro, mas possível no Cone Sul)."},
-        "Junho": {"Soja": "Vazio Sanitário", "Milho": "Colheita", "Cafe": "Colheita", "Chuva": 30, "Risco": "⚠️ Baixo nível do Rio Madeira (Alerta Logístico)."},
-        "Julho": {"Soja": "Preparo", "Milho": "Fim Colheita", "Cafe": "Fim Colheita", "Chuva": 10, "Risco": "🔥 Queimadas / Rio Madeira em nível crítico."},
-        "Agosto": {"Soja": "Planejamento", "Milho": "Vazio", "Cafe": "Poda", "Chuva": 15, "Risco": "🔥 Poeira e baixa umidade / Stress hídrico severo."},
-        "Setembro": {"Soja": "Início Plantio", "Milho": "Vazio", "Cafe": "Florada", "Chuva": 80, "Risco": "⚠️ Irregularidade nas primeiras chuvas (Risco no plantio)."},
-        "Outubro": {"Soja": "Plantio Intenso", "Milho": "Vazio", "Cafe": "Crescimento", "Chuva": 180, "Risco": "⚠️ Lagartas desfolhadoras."},
-        "Novembro": {"Soja": "Crescimento", "Milho": "Vazio", "Cafe": "Crescimento", "Chuva": 230, "Risco": "⚠️ Replantio por excesso ou falta de chuva."},
-        "Dezembro": {"Soja": "Crescimento", "Milho": "Vazio", "Cafe": "Crescimento", "Chuva": 290, "Risco": "⚠️ Doenças fúngicas por alta umidade."},
+        "Janeiro": {"Soja": "Crescimento/Colheita", "Milho": "Preparo Solo", "Cafe": "Crescimento", "Chuva": 300, "Risco": "Ferrugem Asiática (Soja) / Pluviosidade elevada na colheita precoce."},
+        "Fevereiro": {"Soja": "Colheita Intensa", "Milho": "Plantio (Safrinha)", "Cafe": "Crescimento", "Chuva": 280, "Risco": "Gargalos logísticos por pluviosidade / Janela de plantio do Milho."},
+        "Março": {"Soja": "Conclusão de Colheita", "Milho": "Crescimento", "Cafe": "Maturação", "Chuva": 250, "Risco": "Incidência de Lagarta do Cartucho (Milho)."},
+        "Abril": {"Soja": "Vazio Sanitário", "Milho": "Crescimento", "Cafe": "Início Colheita", "Chuva": 150, "Risco": "Transição para período de estiagem / Cigarrinha no Milho."},
+        "Maio": {"Soja": "Vazio Sanitário", "Milho": "Maturação", "Cafe": "Colheita Intensa", "Chuva": 80, "Risco": "Possibilidade de frentes frias e geadas tardias (Cone Sul)."},
+        "Junho": {"Soja": "Vazio Sanitário", "Milho": "Colheita", "Cafe": "Colheita", "Chuva": 30, "Risco": "Nível reduzido do Rio Madeira (Impacto Logístico)."},
+        "Julho": {"Soja": "Preparo Solo", "Milho": "Fim Colheita", "Cafe": "Fim Colheita", "Chuva": 10, "Risco": "Incidência de queimadas / Rio Madeira em nível crítico."},
+        "Agosto": {"Soja": "Planejamento Safra", "Milho": "Vazio Sanitário", "Cafe": "Poda", "Chuva": 15, "Risco": "Baixa umidade relativa / Stress hídrico severo."},
+        "Setembro": {"Soja": "Início Plantio", "Milho": "Vazio Sanitário", "Cafe": "Florada", "Chuva": 80, "Risco": "Irregularidade pluviométrica no estabelecimento de cultura."},
+        "Outubro": {"Soja": "Plantio Intenso", "Milho": "Vazio Sanitário", "Cafe": "Crescimento", "Chuva": 180, "Risco": "Pressão de pragas desfolhadoras."},
+        "Novembro": {"Soja": "Desenvolvimento", "Milho": "Vazio Sanitário", "Cafe": "Crescimento", "Chuva": 230, "Risco": "Necessidade de replantio por anomalias climáticas."},
+        "Dezembro": {"Soja": "Desenvolvimento", "Milho": "Vazio Sanitário", "Cafe": "Crescimento", "Chuva": 290, "Risco": "Patógenos fúngicos decorrentes da alta umidade."},
     }
 
     c_c1, c_c2 = st.columns([1, 2])
     
     with c_c1:
-        st.write(f"### Status em {mes_sel}")
+        st.write(f"### Status Técnico: {mes_sel}")
         info = calendario[mes_sel]
-        st.write(f"🌱 **Soja:** {info['Soja']}")
-        st.write(f"🌽 **Milho:** {info['Milho']}")
-        st.write(f"☕ **Café:** {info['Cafe']}")
-        st.error(info['Risco'])
+        st.write(f"Soja: {info['Soja']}")
+        st.write(f"Milho: {info['Milho']}")
+        st.write(f"Café: {info['Cafe']}")
+        st.warning(info['Risco'])
 
     with c_c2:
         # Gráfico de Chuvas
@@ -350,7 +350,7 @@ with tab3:
 
     # 5. MATRIZ DE PERFORMANCE E EFICIÊNCIA (DADOS REAIS)
     st.divider()
-    st.subheader("🏆 Matriz de Performance Agrícola")
+    st.subheader("Matriz de Performance Agrícola")
     
     # Calculando performance relativa à média do estado
     df_perf = df.copy()
@@ -390,7 +390,7 @@ with tab3:
 
     # 6. RELEVÂNCIA ECONÔMICA REAL (DADOS INCONTESTÁVEIS)
     st.divider()
-    st.subheader("🏛️ Relevância no PIB Agropecuário")
+    st.subheader("Relevância no PIB Agropecuário")
     
     if 'PIB_Agro_Mil' in df.columns and 'Valor_Agricola_Total_Mil' in df.columns:
         col_v1, col_v2 = st.columns([1, 1])
@@ -424,9 +424,10 @@ with tab3:
             st.write(f"A **{cultura}** é responsável por aproximadamente **{participacao_real:.1f}%** de toda a riqueza agropecuária gerada no estado.")
             st.caption("Fonte: Cruzamento IBGE PAM 2023 vs PIB Municipal 2021 (Valores Correntes)")
 
-# --- FOOTER: ASSISTENTE DE IA ---
+# --- FOOTER ---
 st.divider()
-st.subheader("🤖 Consultor Estratégico AI")
+st.subheader("Consultoria de Dados Agro")
+st.info("Plataforma analítica baseada em dados oficiais do IBGE. Foco em precisão e transparência setorial.")
 
 if "messages" not in st.session_state: st.session_state.messages = []
 for msg in st.session_state.messages:
