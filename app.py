@@ -54,9 +54,15 @@ with st.sidebar:
     mun_selecionado = st.selectbox("Foco Regional:", municipios_lista, key="sel_sidebar_municipio")
     
     st.markdown("---")
-    st.subheader("Fonte dos Dados")
-    st.caption("IBGE: PAM/PPM 2023 | PIB 2021")
-    st.info("Plataforma Auditada")
+    st.subheader("Auditoria de Dados")
+    st.caption("""
+    **Fontes Oficiais (API SIDRA/IBGE):**
+    - **Agricultura (PAM 2023):** Tabelas 1612 e 1613.
+    - **Pecuária (PPM 2023):** Tabelas 3939 e 74.
+    - **PIB Municipal (2021):** Tabela 5938.
+    - **Geometria:** Malha Digital IBGE 2022.
+    """)
+    st.info("Dados extraídos em tempo real via API oficial.")
 
 # --- HEADER E KPIs TOTAIS (O IMPACTO) ---
 st.title("Agro Intelligence Hub | Rondônia")
@@ -286,16 +292,6 @@ with tab2:
             """)
             
     st.markdown("---")
-    st.subheader("Fonte dos Dados")
-    st.caption("""
-    Dados oficiais via API SIDRA (IBGE):
-    - Agricultura: PAM 2023 (Tab 1612/1613)
-    - Pecuária: PPM 2023 (Tab 3939)
-    - Leite: PPM 2023 (Tab 74)
-    - PIB: Tabela 5938 (Base 2021)
-    - Geometria: Malha Digital IBGE 2022
-    """)
-    st.info("Auditoria técnica verificada.")
 
 # --- ABA 3: SAZONALIDADE E MERCADO ---
 with tab3:
