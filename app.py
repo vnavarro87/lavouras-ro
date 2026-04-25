@@ -4,13 +4,8 @@ import plotly.express as px
 import json
 import os
 
-# --- CONFIGURAÇÃO DA PÁGINA ---
-st.set_page_config(
-    page_title="Mapa da Soja em Rondônia",
-    layout="wide"
-)
+st.set_page_config(page_title="Lavouras de Rondônia", layout="wide")
 
-# --- ESTILO ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
@@ -21,180 +16,251 @@ st.markdown("""
         border-left: 3px solid #00d26a;
         font-size: 13px; margin-bottom: 16px;
     }
+    .context-box {
+        background-color: #1e2130; border-radius: 10px;
+        padding: 14px 16px; border-left: 4px solid #00d26a;
+        font-size: 14px; color: #d0d4dc; margin-bottom: 8px;
+    }
     </style>
 """, unsafe_allow_html=True)
 
-# --- CARREGAMENTO DE DADOS ---
+# --- CONFIGURAÇÃO DAS CULTURAS ---
+CULTURAS = {
+    "Soja": {
+        "col_qtd":   "Soja_Qtd_T",
+        "col_valor": "Soja_Valor_Mil",
+        "col_prod":  "Soja_Prod_KgHa",
+        "col_area":  "Soja_AreaPlant_Ha",
+        "contexto": (
+            "Principal lavoura temporária de Rondônia. "
+            "O Cone Sul do estado — Vilhena, Cerejeiras e Chupinguaia — "
+            "concentra a maior parte da produção e rivaliza em escala com municípios do Mato Grosso."
+        ),
+    },
+    "Milho": {
+        "col_qtd":   "Milho_Qtd_T",
+        "col_valor": "Milho_Valor_Mil",
+        "col_prod":  "Milho_Prod_KgHa",
+        "col_area":  "Milho_AreaPlant_Ha",
+        "contexto": (
+            "Cultivado principalmente em sistema safrinha, logo após a colheita da soja. "
+            "A produtividade média de RO supera 4.000 kg/ha, "
+            "resultado da adoção de tecnologia no Cone Sul e na região de Ariquemes."
+        ),
+    },
+    "Café": {
+        "col_qtd":   "Cafe_Qtd_T",
+        "col_valor": "Cafe_Valor_Mil",
+        "col_prod":  "Cafe_Prod_KgHa",
+        "col_area":  None,
+        "contexto": (
+            "Rondônia é um dos maiores produtores de Coffea canephora (robusta/conilon) do Brasil. "
+            "Cacoal, São Miguel do Guaporé e Alta Floresta D'Oeste lideram, "
+            "com produtividade acima da média nacional para a espécie."
+        ),
+    },
+    "Cacau": {
+        "col_qtd":   "Cacau_Qtd_T",
+        "col_valor": "Cacau_Valor_Mil",
+        "col_prod":  "Cacau_Prod_KgHa",
+        "col_area":  None,
+        "contexto": (
+            "Cultura em expansão em RO, com destaque para o nicho de chocolate fino. "
+            "Jaru é o maior produtor estadual com produtividade bem acima da média, "
+            "seguida por municípios do Vale do Jamari."
+        ),
+    },
+}
+
+
 @st.cache_data
 def carregar_dados():
     pasta = os.path.dirname(__file__)
     df = pd.read_csv(os.path.join(pasta, "dados_agro_ro_master.csv"))
     for col in df.columns:
         if col != "Municipio":
-            df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
-
-    with open(os.path.join(pasta, "mapa_ro.json"), encoding='utf-8') as f:
+            df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
+    with open(os.path.join(pasta, "mapa_ro.json"), encoding="utf-8") as f:
         geojson = json.load(f)
     return df, geojson
 
-df, geojson = carregar_dados()
 
-# Apenas colunas de soja são usadas neste projeto
-df = df[["Municipio", "Soja_Qtd_T", "Soja_Valor_Mil",
-         "Soja_Prod_KgHa", "Soja_AreaPlant_Ha"]].copy()
+df, geojson = carregar_dados()
 
 # --- SIDEBAR ---
 with st.sidebar:
-    st.title("Mapa da Soja | RO")
-    st.caption("Produção municipal a partir de dados públicos do IBGE.")
+    st.title("Lavouras de RO")
+    st.caption("Produção agrícola municipal — dados públicos do IBGE.")
     st.markdown("---")
 
-    municipios_lista = ["Rondônia (todos)"] + sorted(df['Municipio'].unique().tolist())
-    mun_selecionado = st.selectbox("Município em foco:", municipios_lista)
+    cultura_sel = st.selectbox("Cultura:", list(CULTURAS.keys()))
+    cfg = CULTURAS[cultura_sel]
+
+    st.markdown("---")
+
+    municipios_lista = ["Rondônia (todos)"] + sorted(df["Municipio"].unique().tolist())
+    mun_sel = st.selectbox("Município em foco:", municipios_lista)
 
     st.markdown("---")
     st.subheader("Fontes")
     st.caption("""
-    - **Produção, área e valor:** IBGE / PAM 2023 (tabela 1612)
+    - **PAM 2023** (lavoura temporária): tabela 1612
+    - **PAM 2023** (lavoura permanente): tabela 1613
     - **Geometria:** Malha Municipal IBGE 2022
-    - **Coleta:** API SIDRA, último período disponível
+    - Coleta via API SIDRA — último período disponível
     """)
-    st.caption("Código aberto no GitHub. Veja `METODOLOGIA.md` para detalhes.")
+    st.caption("Veja `METODOLOGIA.md` para detalhes sobre tratamento de dados.")
 
-# --- HEADER ---
-st.title("Mapa da Soja em Rondônia")
-st.markdown(
-    '<div class="disclaimer">'
-    'Visualização de dados públicos do IBGE (PAM 2023). '
-    'Os números refletem o último ano fechado da Produção Agrícola Municipal — '
-    'não é informação em tempo real.'
-    '</div>',
-    unsafe_allow_html=True
-)
-
-# --- LÓGICA DE FOCO REGIONAL ---
+# --- ZOOM POR MUNICÍPIO ---
 zoom_atual = 5.6
 centro_atual = {"lat": -10.9, "lon": -62.8}
 
-if mun_selecionado != "Rondônia (todos)":
-    for feature in geojson['features']:
-        if feature['properties']['name'] == mun_selecionado:
-            geom = feature['geometry']
+if mun_sel != "Rondônia (todos)":
+    for feature in geojson["features"]:
+        if feature["properties"]["name"] == mun_sel:
+            geom = feature["geometry"]
             pontos = []
-            if geom['type'] == 'Polygon':
-                pontos = geom['coordinates'][0]
-            elif geom['type'] == 'MultiPolygon':
-                for poli in geom['coordinates']:
+            if geom["type"] == "Polygon":
+                pontos = geom["coordinates"][0]
+            elif geom["type"] == "MultiPolygon":
+                for poli in geom["coordinates"]:
                     for anel in poli:
                         pontos.extend(anel)
-            pontos_validos = [p for p in pontos if isinstance(p, list) and len(p) >= 2]
-            if pontos_validos:
-                lon = sum(p[0] for p in pontos_validos) / len(pontos_validos)
-                lat = sum(p[1] for p in pontos_validos) / len(pontos_validos)
-                centro_atual = {"lat": lat, "lon": lon}
+            validos = [p for p in pontos if isinstance(p, list) and len(p) >= 2]
+            if validos:
+                centro_atual = {
+                    "lat": sum(p[1] for p in validos) / len(validos),
+                    "lon": sum(p[0] for p in validos) / len(validos),
+                }
                 zoom_atual = 8.5
             break
 
+# --- HEADER ---
+st.title("Lavouras de Rondônia")
+st.markdown(
+    '<div class="disclaimer">'
+    "Visualização de dados públicos do IBGE (PAM 2023). "
+    "Os números refletem o último ano fechado da Produção Agrícola Municipal — "
+    "não é informação em tempo real."
+    "</div>",
+    unsafe_allow_html=True,
+)
+
+# --- CONTEXTO DA CULTURA ---
+st.markdown(
+    f'<div class="context-box"><b>{cultura_sel} em RO:</b> {cfg["contexto"]}</div>',
+    unsafe_allow_html=True,
+)
+
 # --- KPIs ---
-df_foco = df if mun_selecionado == "Rondônia (todos)" else df[df['Municipio'] == mun_selecionado]
+df_foco = df if mun_sel == "Rondônia (todos)" else df[df["Municipio"] == mun_sel]
 
-producao_total = df_foco['Soja_Qtd_T'].sum()
-area_total = df_foco['Soja_AreaPlant_Ha'].sum()
-valor_total = df_foco['Soja_Valor_Mil'].sum()
-prod_media = (producao_total * 1000 / area_total) if area_total > 0 else 0
+producao  = df_foco[cfg["col_qtd"]].sum()
+valor     = df_foco[cfg["col_valor"]].sum()
+prod_cols = df[df[cfg["col_prod"]] > 0][cfg["col_prod"]]
+prod_media = prod_cols.mean() if not prod_cols.empty else 0
 
-c1, c2, c3, c4 = st.columns(4)
-with c1:
-    st.metric("Produção", f"{producao_total/1e6:.2f} Mi t" if producao_total >= 1e6 else f"{producao_total:,.0f} t")
-with c2:
-    st.metric("Área Plantada", f"{area_total/1e3:,.1f} mil ha")
-with c3:
-    st.metric("Produtividade Média", f"{prod_media:,.0f} kg/ha")
-with c4:
-    st.metric("Valor da Produção", f"R$ {valor_total/1e3:.1f} Mi" if valor_total >= 1e3 else f"R$ {valor_total:,.0f} mil")
+kpi_cols = st.columns(4 if cfg["col_area"] else 3)
+
+with kpi_cols[0]:
+    st.metric("Produção total", f"{producao/1e3:,.1f} mil t" if producao >= 1e3 else f"{producao:,.0f} t")
+with kpi_cols[1]:
+    st.metric("Produtividade média", f"{prod_media:,.0f} kg/ha")
+with kpi_cols[2]:
+    st.metric("Valor da produção", f"R$ {valor/1e3:.1f} Mi" if valor >= 1e3 else f"R$ {valor:,.0f} mil")
+
+if cfg["col_area"]:
+    area = df_foco[cfg["col_area"]].sum()
+    with kpi_cols[3]:
+        st.metric("Área plantada", f"{area/1e3:,.1f} mil ha")
 
 st.markdown("---")
 
-# --- SEÇÃO 1: MAPA ---
-st.subheader("Distribuição da produção por município")
+# --- MAPA ---
+st.subheader(f"Distribuição de {cultura_sel} por município")
 
-metrica_mapa = st.radio(
-    "Métrica do mapa:",
-    ["Quantidade (t)", "Produtividade (kg/ha)", "Área plantada (ha)"],
-    horizontal=True
-)
-mapa_col = {
-    "Quantidade (t)": "Soja_Qtd_T",
-    "Produtividade (kg/ha)": "Soja_Prod_KgHa",
-    "Área plantada (ha)": "Soja_AreaPlant_Ha"
-}[metrica_mapa]
+opcoes_mapa = {"Quantidade (t)": cfg["col_qtd"], "Produtividade (kg/ha)": cfg["col_prod"], "Valor (R$ mil)": cfg["col_valor"]}
+metrica_mapa = st.radio("Métrica:", list(opcoes_mapa.keys()), horizontal=True)
+col_mapa = opcoes_mapa[metrica_mapa]
 
 fig_mapa = px.choropleth_mapbox(
     df, geojson=geojson, locations="Municipio", featureidkey="properties.name",
-    color=mapa_col, color_continuous_scale="Viridis",
+    color=col_mapa, color_continuous_scale="Viridis",
     mapbox_style="carto-darkmatter", zoom=zoom_atual, center=centro_atual,
     opacity=0.7, hover_name="Municipio",
-    labels={mapa_col: metrica_mapa}
+    labels={col_mapa: metrica_mapa},
 )
-if mun_selecionado != "Rondônia (todos)":
+if mun_sel != "Rondônia (todos)":
     fig_mapa.update_traces(marker_line_width=2, marker_line_color="white")
 fig_mapa.update_layout(
     margin={"r": 0, "t": 0, "l": 0, "b": 0},
-    paper_bgcolor='rgba(0,0,0,0)',
-    uirevision=mun_selecionado
+    paper_bgcolor="rgba(0,0,0,0)",
+    uirevision=f"{cultura_sel}-{mun_sel}",
 )
 st.plotly_chart(fig_mapa, use_container_width=True)
 
 st.markdown("---")
 
-# --- SEÇÃO 2: RANKINGS E PERFORMANCE ---
+# --- RANKING E SCATTER ---
 col_r, col_s = st.columns([1, 2])
 
 with col_r:
-    st.subheader("Top 10 produtores")
-    top10 = df.nlargest(10, "Soja_Qtd_T")[["Municipio", "Soja_Qtd_T"]].copy()
+    st.subheader(f"Top 10 — {cultura_sel}")
+    top10 = df[df[cfg["col_qtd"]] > 0].nlargest(10, cfg["col_qtd"])[["Municipio", cfg["col_qtd"]]].copy()
     top10.columns = ["Município", "Produção (t)"]
     top10["Produção (t)"] = top10["Produção (t)"].map(lambda v: f"{v:,.0f}")
     st.dataframe(top10, hide_index=True, use_container_width=True)
 
 with col_s:
-    st.subheader("Área x Produtividade")
-    df_scatter = df[df["Soja_AreaPlant_Ha"] > 0].copy()
-    media_prod = df_scatter["Soja_Prod_KgHa"].mean()
+    df_sc = df[df[cfg["col_qtd"]] > 0].copy()
 
-    fig_scatter = px.scatter(
-        df_scatter,
-        x="Soja_AreaPlant_Ha", y="Soja_Prod_KgHa",
-        size="Soja_Qtd_T", hover_name="Municipio",
-        labels={
-            "Soja_AreaPlant_Ha": "Área plantada (ha)",
-            "Soja_Prod_KgHa": "Produtividade (kg/ha)"
-        },
-        color_discrete_sequence=["#00d26a"]
-    )
-    fig_scatter.add_hline(
+    if cfg["col_area"]:
+        # Soja e Milho: Área × Produtividade
+        st.subheader("Área plantada × Produtividade")
+        fig_sc = px.scatter(
+            df_sc, x=cfg["col_area"], y=cfg["col_prod"],
+            size=cfg["col_qtd"], hover_name="Municipio",
+            labels={cfg["col_area"]: "Área plantada (ha)", cfg["col_prod"]: "Produtividade (kg/ha)"},
+            color_discrete_sequence=["#00d26a"],
+        )
+        legenda_scatter = (
+            "Cada bolha é um município. Tamanho = produção total. "
+            "Acima da linha: produtividade superior à média estadual."
+        )
+    else:
+        # Café e Cacau: Produção × Produtividade
+        st.subheader("Produção × Produtividade")
+        fig_sc = px.scatter(
+            df_sc, x=cfg["col_qtd"], y=cfg["col_prod"],
+            size=cfg["col_valor"], hover_name="Municipio",
+            labels={cfg["col_qtd"]: "Produção (t)", cfg["col_prod"]: "Produtividade (kg/ha)"},
+            color_discrete_sequence=["#00d26a"],
+        )
+        legenda_scatter = (
+            "Cada bolha é um município. Tamanho = valor da produção. "
+            "Acima da linha: produtividade superior à média estadual."
+        )
+
+    media_prod = df_sc[cfg["col_prod"]].mean()
+    fig_sc.add_hline(
         y=media_prod, line_dash="dash", line_color="white",
         annotation_text=f"Média estadual: {media_prod:,.0f} kg/ha",
-        annotation_position="top right"
+        annotation_position="top right",
     )
-    fig_scatter.update_layout(
-        paper_bgcolor='rgba(0,0,0,0)',
-        plot_bgcolor='rgba(0,0,0,0)',
-        font_color="white"
+    fig_sc.update_layout(
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font_color="white",
     )
-    st.plotly_chart(fig_scatter, use_container_width=True)
-
-    st.caption(
-        "Cada bolha é um município. Tamanho representa a produção total. "
-        "Municípios acima da linha tracejada têm produtividade superior à média estadual."
-    )
+    st.plotly_chart(fig_sc, use_container_width=True)
+    st.caption(legenda_scatter)
 
 st.markdown("---")
 
 # --- RODAPÉ ---
 st.caption(
     "Dados: IBGE / PAM 2023 (API SIDRA). "
-    "Limitações conhecidas: dados anuais, sem desagregação intra-anual; "
-    "valores monetários em reais correntes do ano de referência. "
-    "Veja `METODOLOGIA.md` para o tratamento aplicado a dados ausentes e suprimidos."
+    "Limitações: dados anuais; valores em reais correntes do ano de referência; "
+    "células suprimidas por sigilo estatístico tratadas como zero. "
+    "Veja METODOLOGIA.md para detalhes."
 )
