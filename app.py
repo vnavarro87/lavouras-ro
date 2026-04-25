@@ -148,7 +148,11 @@ with tab1:
         if mun_selecionado != "Rondônia (Geral)":
             fig_mapa.update_traces(marker_line_width=2, marker_line_color="white")
             
-        fig_mapa.update_layout(margin={"r":0,"t":0,"l":0,"b":0}, paper_bgcolor='rgba(0,0,0,0)')
+        fig_mapa.update_layout(
+            margin={"r":0,"t":0,"l":0,"b":0}, 
+            paper_bgcolor='rgba(0,0,0,0)',
+            uirevision=mun_selecionado # Mantém o zoom manual do usuário ao trocar cultura
+        )
         st.plotly_chart(fig_mapa, use_container_width=True)
 
     with col_info:
@@ -219,7 +223,12 @@ with tab2:
         if mun_selecionado != "Rondônia (Geral)":
             fig_gado.update_traces(marker_line_width=2, marker_line_color="white")
             
-        fig_gado.update_layout(margin={"r":0,"t":0,"l":0,"b":0}, paper_bgcolor='rgba(0,0,0,0)', coloraxis_showscale=True)
+        fig_gado.update_layout(
+            margin={"r":0,"t":0,"l":0,"b":0}, 
+            paper_bgcolor='rgba(0,0,0,0)', 
+            coloraxis_showscale=True,
+            uirevision=mun_selecionado # Preserva o zoom manual
+        )
         st.plotly_chart(fig_gado, use_container_width=True, config={'displayModeBar': False})
 
     # Matriz de Performance
