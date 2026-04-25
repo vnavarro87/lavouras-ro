@@ -4,8 +4,10 @@ import plotly.express as px
 import plotly.graph_objects as go
 import json
 import os
-import math
 import google.generativeai as genai
+
+# --- ESTADO INICIAL ---
+api_key = None
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(
@@ -63,6 +65,10 @@ with st.sidebar:
     """)
     st.markdown('<div style="background-color: #3d4156; color: #ffbd45; padding: 10px; border-radius: 5px; font-size: 13px; margin-bottom: 10px;"><b>Nota Técnica:</b> As métricas de representatividade utilizam o PIB 2021 como baseline econômico.</div>', unsafe_allow_html=True)
     st.markdown('<div style="font-size: 12px; color: #808495; border-top: 1px solid #3d4156; padding-top: 10px;">Monitoramento em tempo real via API SIDRA.</div>', unsafe_allow_html=True)
+    
+    with st.expander("Configurações Analíticas"):
+        api_key = st.text_input("Gemini API Key:", type="password")
+        if api_key: genai.configure(api_key=api_key)
 
 # --- LÓGICA DE FOCO REGIONAL (ZOOM E CENTRO) ---
 zoom_atual = 5.6
@@ -335,7 +341,7 @@ with tab3:
 # --- FOOTER ---
 st.divider()
 st.subheader("Consultoria Analítica de Dados")
-st.info("Plataforma analítica baseada em dados oficiais do IBGE. Foco em precisão e transparência setorial.")
+st.markdown('<div style="background-color: #1e2130; padding: 15px; border-radius: 10px; border-left: 5px solid #00d26a; color: #808495; font-size: 14px;">Plataforma analítica baseada em dados oficiais do IBGE. Foco em precisão e transparência setorial.</div>', unsafe_allow_html=True)
 
 # Sugestões de Análise para o Usuário
 with st.expander("Exemplos de consultas estratégicas para a I.A."):
