@@ -231,9 +231,9 @@ with col_r1:
     fig_prod.update_traces(marker_color="#00d26a")
     st.plotly_chart(fig_prod, use_container_width=True)
 
-# Gráfico 2: Top 15 por Produtividade (colorido por acima/abaixo da média)
+# Gráfico 2: Todos os municípios por Produtividade (colorido por acima/abaixo da média)
 with col_r2:
-    top15_eff = df_rank[df_rank[cfg["col_prod"]] > 0].nlargest(15, cfg["col_prod"]).sort_values(cfg["col_prod"])
+    top15_eff = df_rank[df_rank[cfg["col_prod"]] > 0].sort_values(cfg["col_prod"])
     fig_eff = px.bar(
         top15_eff, x=cfg["col_prod"], y="Municipio", orientation="h",
         labels={cfg["col_prod"]: "Produtividade (kg/ha)", "Municipio": ""},
