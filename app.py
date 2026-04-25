@@ -132,129 +132,47 @@ with tab2:
     c1, c2 = st.columns([1, 4])
     with c1:
         cultura = st.selectbox("Cultura:", ["Soja", "Milho", "Cafe", "Cacau"], key="sel_perf_cultura")
-        metrica = st.selectbox("Métrica:", ["Quantidade", "Produtividade", "Valor", "Perda"], key="sel_perf_metrica")
+        metrica = st.selectbox("Métrica:", ["Quantidade", "Produtividade", "Valor"], key="sel_perf_metrica")
         
-        # Mapeamento de colunas
         map_cols = {
             "Quantidade": f"{cultura}_Qtd_T",
             "Produtividade": f"{cultura}_Prod_KgHa",
-            "Valor": f"{cultura}_Valor_Mil",
-            "Perda": f"{cultura}_Perda_Percent"
+            "Valor": f"{cultura}_Valor_Mil"
         }
         col_ativa = map_cols[metrica]
         
     with c2:
-        # Definindo as colunas para os Mini Cards
         mc1, mc2, mc3 = st.columns(3)
-        
-        # Verificação de segurança: Só prossegue se a coluna existir
         if col_ativa in df.columns:
-            # Pegamos a coluna de quantidade específica desta cultura
             col_qtd = f"{cultura}_Qtd_T"
-            
             if col_qtd in df.columns:
                 total_prod = df[col_qtd].sum()
                 max_prod = df[col_qtd].max()
-                lider_idx = df[col_qtd].idxmax()
-                lider = df.loc[lider_idx, "Municipio"] if not df.empty else "N/A"
+                lider = df.loc[df[col_qtd].idxmax(), "Municipio"] if not df.empty else "N/A"
                 
-                mc1.markdown(f'<div class="metric-card"><div class="metric-label">Produção Total ({cultura})</div><div class="metric-value">{total_prod:,.0f} T</div></div>', unsafe_allow_html=True)
-                mc2.markdown(f'<div class="metric-card"><div class="metric-label">Líder de Produção</div><div class="metric-value">{lider}</div></div>', unsafe_allow_html=True)
-                mc3.markdown(f'<div class="metric-card"><div class="metric-label">Recorde Municipal</div><div class="metric-value">{max_prod:,.0f} T</div></div>', unsafe_allow_html=True)
-            else:
-                st.warning(f"Dados de quantidade para {cultura} não encontrados.")
-        else:
-            st.error(f"Coluna {col_ativa} não encontrada no banco de dados.")
+                mc1.metric(f"Produção Total ({cultura})", f"{total_prod:,.0f} T")
+                mc2.metric("Líder de Produção", lider)
+                mc3.metric("Recorde Municipal", f"{max_prod:,.0f} T")
 
-    st.markdown("---")
-    
-    if col_ativa in df.columns:
-        col_map, col_chart = st.columns([2, 1])
-        
-        with col_map:
-            # Paleta de cores
-            paletas = {"Soja": "Viridis", "Milho": "Plasma", "Cafe": "Inferno", "Cacau": "Magma"}
-            cor_mapa = paletas.get(cultura, "Viridis")
-            if metrica == "Perda": cor_mapa = "Reds"
-            
-            df['valor_visual'] = df[col_ativa].apply(lambda x: math.log10(x + 1))
-            
-            fig_map = px.choropleth_mapbox(
-                df, geojson=geojson, locations="Municipio", featureidkey="properties.name",
-                color='valor_visual', color_continuous_scale=cor_mapa,
-                mapbox_style="carto-darkmatter", zoom=zoom_atual, center=centro_atual,
-                opacity=0.8, hover_name="Municipio",
-                hover_data={'valor_visual': False, col_ativa: ":.2f"}
-            )
-            fig_map.update_layout(
-                margin={"r":0,"t":0,"l":0,"b":0}, 
-                paper_bgcolor='rgba(0,0,0,0)',
-                coloraxis_showscale=True # Escala restaurada
-            )
-            st.plotly_chart(fig_map, use_container_width=True, config={'displayModeBar': False})
-        
-        with col_chart:
-            st.subheader(f"Top 10: {metrica}")
-            top_df = df.nlargest(10, col_ativa)[["Municipio", col_ativa]]
-            fig_bar = px.bar(top_df, x=col_ativa, y="Municipio", orientation='h', color=col_ativa, color_continuous_scale=cor_mapa)
-            fig_bar.update_layout(
-                showlegend=False, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', 
-                font_color="white", yaxis={'categoryorder':'total ascending'},
-                coloraxis_showscale=True # Escala restaurada no ranking
-            )
-            st.plotly_chart(fig_bar, use_container_width=True, config={'displayModeBar': False})
-
-# --- ABA 2: PECUÁRIA ---
-with tab2:
-    if mun_selecionado != "Rondônia (Geral)":
-        st.markdown(f"### 📍 Detalhes: {mun_selecionado} (Pecuária)")
-        c_p1, c_p2 = st.columns(2)
-        with c_p1: st.metric("Efetivo Bovino", f_gado)
-        with c_p2: st.metric("Produção Leiteira", f_leite)
-        st.markdown("---")
-        
-    st.subheader("🐄 Análise de Rebanho Bovino")
-    
-    if "Gado_Cabecas" in df.columns:
-        c_p1, c_p2 = st.columns([3, 1])
-        
-        with c_p2:
-            finalidade = st.selectbox("Analisar por:", ["Corte (Rebanho)", "Leite (Produção)"])
-            col_ativa_gado = "Gado_Cabecas" if "Corte" in finalidade else "Leite_Mil_Litros"
-            unidade_gado = "Cab." if "Corte" in finalidade else "Mil Litros"
-            cor_gado = "YlOrBr" if "Corte" in finalidade else "GnBu"
-            
-            total_v = df[col_ativa_gado].sum()
-            st.metric(f"Total RO ({finalidade})", f"{total_v:,.0f} {unidade_gado}")
-            st.markdown("---")
-            st.write(f"**Top 5 ({finalidade}):**")
-            st.table(df.nlargest(5, col_ativa_gado)[["Municipio", col_ativa_gado]])
-            
-        with c_p1:
-            fig_gado = px.choropleth_mapbox(
-                df, geojson=geojson, locations="Municipio", featureidkey="properties.name",
-                color=col_ativa_gado, color_continuous_scale=cor_gado,
-                mapbox_style="carto-darkmatter", zoom=zoom_atual, center=centro_atual,
-                opacity=0.7, hover_name="Municipio"
-            )
-            total_prod = df[f"{cultura}_Qtd_T"].sum()
-            lider = df.loc[df[f"{cultura}_Qtd_T"].idxmax(), "Municipio"]
-            mc1.metric("Produção Total", f"{total_prod:,.0f} T")
-            mc2.metric("Líder de Produção", lider)
-            mc3.metric("Recorde Municipal", f"{df[f'{cultura}_Qtd_T'].max():,.0f} T")
-
-    st.markdown("---")
+    st.divider()
     
     # Seção Pecuária dentro da Aba 2
-    st.subheader("🐄 Análise de Pecuária")
-    c_p1, c_p2 = st.columns([3, 1])
-    with c_p2:
+    st.subheader("🐄 Análise de Pecuária e Origem Animal")
+    cp1, cp2 = st.columns([3, 1])
+    with cp2:
         finalidade = st.selectbox("Analisar por:", ["Corte (Rebanho)", "Leite (Produção)"], key="sel_pecuaria_finalidade")
         col_ativa_gado = "Gado_Cabecas" if "Corte" in finalidade else "Leite_Mil_Litros"
         cor_gado = "YlOrBr" if "Corte" in finalidade else "GnBu"
-        st.metric(f"Total RO ({finalidade})", f"{df[col_ativa_gado].sum():,.0f}")
-    with c_p1:
-        fig_gado = px.choropleth_mapbox(df, geojson=geojson, locations="Municipio", featureidkey="properties.name", color=col_ativa_gado, color_continuous_scale=cor_gado, mapbox_style="carto-darkmatter", zoom=5.2, center={"lat": -10.9, "lon": -62.8}, opacity=0.7)
+        unidade_g = "Cab." if "Corte" in finalidade else "Mil Litros"
+        
+        total_v = df[col_ativa_gado].sum()
+        st.metric(f"Total RO ({finalidade})", f"{total_v:,.0f} {unidade_g}")
+        st.markdown("---")
+        st.write(f"Top 5 {finalidade}:")
+        st.table(df.nlargest(5, col_ativa_gado)[["Municipio", col_ativa_gado]])
+        
+    with cp1:
+        fig_gado = px.choropleth_mapbox(df, geojson=geojson, locations="Municipio", featureidkey="properties.name", color=col_ativa_gado, color_continuous_scale=cor_gado, mapbox_style="carto-darkmatter", zoom=zoom_atual, center=centro_atual, opacity=0.7)
         fig_gado.update_layout(margin={"r":0,"t":0,"l":0,"b":0}, paper_bgcolor='rgba(0,0,0,0)', coloraxis_showscale=True)
         st.plotly_chart(fig_gado, use_container_width=True, config={'displayModeBar': False})
 
