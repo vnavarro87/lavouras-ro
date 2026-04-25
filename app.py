@@ -127,7 +127,7 @@ with tab1:
     
     with col_mapa:
         st.subheader("Distribuição Espacial da Produção")
-        cultura_mapa = st.selectbox("Selecione a Camada de Dados:", ["Soja", "Milho", "Cafe", "Cacau", "Gado", "Leite"], key="sel_mapa_camada")
+        cultura_mapa = st.selectbox("Perspectiva Analítica:", ["Soja", "Milho", "Cafe", "Cacau", "Gado", "Leite"], key="sel_mapa_camada")
         
         # Lógica de coluna dinâmica para o mapa
         col_map = f"{cultura_mapa}_Qtd_T" if cultura_mapa not in ["Gado", "Leite"] else (f"{cultura_mapa}_Cabecas" if cultura_mapa=="Gado" else f"{cultura_mapa}_Mil_Litros")
