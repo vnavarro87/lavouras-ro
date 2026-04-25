@@ -57,11 +57,12 @@ with st.sidebar:
     st.subheader("Auditoria de Dados")
     st.caption("""
     **Fontes Oficiais (API SIDRA/IBGE):**
-    - **Agricultura (PAM 2023):** Tabelas 1612 e 1613.
-    - **Pecuária (PPM 2023):** Tabelas 3939 e 74.
-    - **PIB Municipal (2021):** Tabela 5938.
+    - **Agricultura (PAM 2023):** Dados de safra mais recentes.
+    - **Pecuária (PPM 2023):** Efetivo de rebanho atualizado.
+    - **PIB Municipal (2021):** Série histórica oficial (IBGE possui 2 anos de defasagem padrão na divulgação de contas regionais).
     - **Geometria:** Malha Digital IBGE 2022.
     """)
+    st.warning("Nota Técnica: As métricas de representatividade utilizam o PIB 2021 como baseline econômico, por ser o dado oficial mais recente disponível no sistema estatístico nacional.")
     st.info("Dados extraídos em tempo real via API oficial.")
 
 # --- HEADER E KPIs TOTAIS (O IMPACTO) ---
