@@ -10,7 +10,6 @@ import google.generativeai as genai
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(
     page_title="RO Agro Intelligence Hub",
-    page_icon="💎",
     layout="wide"
 )
 
@@ -62,8 +61,8 @@ with st.sidebar:
     - **PIB Municipal (2021):** Série histórica oficial (IBGE possui 2 anos de defasagem padrão na divulgação de contas regionais).
     - **Geometria:** Malha Digital IBGE 2022.
     """)
-    st.warning("Nota Técnica: As métricas de representatividade utilizam o PIB 2021 como baseline econômico.")
-    st.info("Dados extraídos em tempo real via API oficial.")
+    st.markdown('<div style="background-color: #3d4156; color: #ffbd45; padding: 10px; border-radius: 5px; font-size: 13px; margin-bottom: 10px;"><b>Nota Técnica:</b> As métricas de representatividade utilizam o PIB 2021 como baseline econômico.</div>', unsafe_allow_html=True)
+    st.markdown('<div style="font-size: 12px; color: #808495; border-top: 1px solid #3d4156; padding-top: 10px;">Monitoramento em tempo real via API SIDRA.</div>', unsafe_allow_html=True)
 
 # --- LÓGICA DE FOCO REGIONAL (ZOOM E CENTRO) ---
 zoom_atual = 5.6
@@ -96,7 +95,7 @@ if mun_selecionado != "Rondônia (Geral)":
 # --- HEADER E KPIs TOTAIS (O IMPACTO) ---
 st.title("Agro Intelligence Hub | Rondônia")
 if mun_selecionado != "Rondônia (Geral)":
-    st.success(f"🔍 Foco Estratégico Ativado: {mun_selecionado}")
+    st.markdown(f'<div style="background-color: #00d26a; color: white; padding: 10px; border-radius: 5px; font-weight: bold;">Foco Estratégico Ativado: {mun_selecionado}</div>', unsafe_allow_html=True)
 else:
     st.markdown("Análise Estratégica de Produção e Competitividade Setorial")
 
@@ -158,14 +157,14 @@ with tab1:
     with col_info:
         st.subheader("Destaques Regionais")
         if mun_selecionado == "Rondônia (Geral)":
-            st.info("Selecione um município na barra lateral para ver o detalhamento local.")
+            st.markdown('<div style="color: #808495; font-size: 14px;">Selecione um município na barra lateral para detalhamento local.</div>', unsafe_allow_html=True)
             # Top 5 Produtores
             top5 = df.nlargest(5, col_map)[['Municipio', col_map]]
             st.write(f"Maiores produtores de {cultura_mapa}:")
             st.table(top5)
         else:
             mun_df = df[df['Municipio'] == mun_selecionado].iloc[0]
-            st.success(f"📍 Analisando: {mun_selecionado}")
+            st.markdown(f'<div style="background-color: #00d26a; color: white; padding: 10px; border-radius: 5px; font-weight: bold; margin-bottom: 10px;">Análise Regional: {mun_selecionado}</div>', unsafe_allow_html=True)
             st.write(f"PIB Agro: R$ {mun_df['PIB_Agro_Mil']/1000:,.1f} Milhões")
             st.write(f"Representatividade no Estado: {(mun_df['PIB_Agro_Mil'] / df['PIB_Agro_Mil'].sum() * 100):.2f}%")
 
@@ -202,7 +201,7 @@ with tab2:
     st.divider()
     
     # Seção Pecuária dentro da Aba 2
-    st.subheader("🐄 Análise de Pecuária e Origem Animal")
+    st.subheader("Análise de Pecuária e Origem Animal")
     cp1, cp2 = st.columns([3, 1])
     with cp2:
         finalidade = st.selectbox("Analisar por:", ["Corte (Rebanho)", "Leite (Produção)"], key="sel_pecuaria_finalidade")
@@ -293,8 +292,8 @@ with tab3:
             "Dezembro": {"Acao": "Desenvolvimento / Aplicações", "Risco": "Patógenos fúngicos decorrentes da alta umidade (290mm)."},
         }
         
-        st.info(f"**Status em {mes_sel}:** {calendario[mes_sel]['Acao']}")
-        st.warning(f"**Alerta de Risco:** {calendario[mes_sel]['Risco']}")
+        st.markdown(f'<div style="border-left: 5px solid #00d26a; padding-left: 15px; margin-bottom: 10px;"><b>Status em {mes_sel}:</b> {calendario[mes_sel]["Acao"]}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div style="border-left: 5px solid #ff4b4b; padding-left: 15px;"><b>Alerta de Risco:</b> {calendario[mes_sel]["Risco"]}</div>', unsafe_allow_html=True)
 
     with c_int2:
         st.subheader("Logística e Fluxos de Exportação")
@@ -305,7 +304,7 @@ with tab3:
         - **Destinos Principais:** China (55%), Europa (20%) e Oriente Médio (15%).
         - **Capacidade:** Superior a 10 milhões de toneladas/ano.
         """)
-        st.success("Nota: A dragagem do Rio Madeira é vital para a competitividade do grão rondoniense.")
+        st.markdown('<div style="background-color: #1e2130; padding: 15px; border-radius: 10px; border-left: 5px solid #00d26a;"><b>Nota Estratégica:</b> A dragagem do Rio Madeira é vital para a competitividade do grão rondoniense.</div>', unsafe_allow_html=True)
 
     st.divider()
     st.subheader("Simulador de Valor Bruto (VBP)")
@@ -342,7 +341,7 @@ if "messages" not in st.session_state: st.session_state.messages = []
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]): st.markdown(msg["content"])
 
-if p_user := st.chat_input("Ex: Qual o impacto das perdas de safra em Vilhena?"):
+if p_user := st.chat_input("Ex: Qual o impacto da produtividade em Vilhena?"):
     with st.chat_message("user"): st.markdown(p_user)
     st.session_state.messages.append({"role": "user", "content": p_user})
 
