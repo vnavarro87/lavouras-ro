@@ -62,28 +62,49 @@ with st.sidebar:
     - **PIB Municipal (2021):** Série histórica oficial (IBGE possui 2 anos de defasagem padrão na divulgação de contas regionais).
     - **Geometria:** Malha Digital IBGE 2022.
     """)
-    st.warning("Nota Técnica: As métricas de representatividade utilizam o PIB 2021 como baseline econômico, por ser o dado oficial mais recente disponível no sistema estatístico nacional.")
+    st.warning("Nota Técnica: As métricas de representatividade utilizam o PIB 2021 como baseline econômico.")
     st.info("Dados extraídos em tempo real via API oficial.")
+
+# --- LÓGICA DE FOCO REGIONAL (ZOOM E CENTRO) ---
+zoom_atual = 5.6
+centro_atual = {"lat": -10.9, "lon": -62.8}
+
+if mun_selecionado != "Rondônia (Geral)":
+    # Buscar coordenadas no GeoJSON para centralizar
+    for feature in geojson['features']:
+        if feature['properties']['name'] == mun_selecionado:
+            # Cálculo simplificado de centro (média das coordenadas)
+            coords = feature['geometry']['coordinates'][0]
+            if isinstance(coords[0], list): coords = coords[0] # Lógica para MultiPolygon simples
+            lon = sum([c[0] for c in coords]) / len(coords)
+            lat = sum([c[1] for c in coords]) / len(coords)
+            centro_atual = {"lat": lat, "lon": lon}
+            zoom_atual = 8.5
+            break
 
 # --- HEADER E KPIs TOTAIS (O IMPACTO) ---
 st.title("Agro Intelligence Hub | Rondônia")
-st.markdown("Análise Estratégica de Produção e Competitividade Setorial")
+if mun_selecionado != "Rondônia (Geral)":
+    st.success(f"🔍 Foco Estratégico Ativado: {mun_selecionado}")
+else:
+    st.markdown("Análise Estratégica de Produção e Competitividade Setorial")
 
-# Lógica de Zoom e Centro do Mapa (Correção de Erro)
-zoom_atual = 5.2
-centro_atual = {"lat": -10.9, "lon": -62.8}
+# Cálculo de Métricas (Estado ou Município)
+df_foco = df if mun_selecionado == "Rondônia (Geral)" else df[df['Municipio'] == mun_selecionado]
 
-# Cálculo de Métricas Estaduais
-pib_total = df['PIB_Agro_Mil'].sum() / 1e6
-vbp_total = df['Valor_Agricola_Total_Mil'].sum() / 1e6
-rebanho_total = df['Gado_Cabecas'].sum() / 1e6
-area_total = df[[c for c in df.columns if 'AreaPlant_Ha' in c]].sum().sum() / 1e6
+pib_val = df_foco['PIB_Agro_Mil'].sum() / 1e6 if mun_selecionado == "Rondônia (Geral)" else df_foco['PIB_Agro_Mil'].sum() / 1e3
+vbp_val = df_foco['Valor_Agricola_Total_Mil'].sum() / 1e6 if mun_selecionado == "Rondônia (Geral)" else df_foco['Valor_Agricola_Total_Mil'].sum() / 1e3
+rebanho_val = df_foco['Gado_Cabecas'].sum() / 1e6 if mun_selecionado == "Rondônia (Geral)" else df_foco['Gado_Cabecas'].sum() / 1e3
+area_val = df_foco[[c for c in df_foco.columns if 'AreaPlant_Ha' in c]].sum().sum() / 1e6 if mun_selecionado == "Rondônia (Geral)" else df_foco[[c for c in df_foco.columns if 'AreaPlant_Ha' in c]].sum().sum() / 1e3
+
+label_unidade = "Bi" if mun_selecionado == "Rondônia (Geral)" else "Mi"
+label_gado = "Mi" if mun_selecionado == "Rondônia (Geral)" else "mil"
 
 c1, c2, c3, c4 = st.columns(4)
-with c1: st.metric("PIB Agropecuário", f"R$ {pib_total:.2f} Bi", help="Valor Adicionado Bruto da Agropecuária (IBGE)")
-with c2: st.metric("Valor da Produção", f"R$ {vbp_total:.2f} Bi", help="Valor Bruto da Produção Agrícola (PAM)")
-with c3: st.metric("Rebanho Bovino", f"{rebanho_total:.2f} Mi", help="Efetivo Total de Cabeças (PPM)")
-with c4: st.metric("Área Cultivada", f"{area_total:.2f} Mi Ha", help="Soma das principais culturas plantadas")
+with c1: st.metric("PIB Agro", f"R$ {pib_val:.2f} {label_unidade}")
+with c2: st.metric("Valor Produção", f"R$ {vbp_val:.2f} {label_unidade}")
+with c3: st.metric("Rebanho", f"{rebanho_val:.2f} {label_gado}")
+with c4: st.metric("Área Plantada", f"{area_val:.2f} {label_unidade if mun_selecionado == 'Rondônia (Geral)' else 'mil Ha'}")
 
 st.markdown("---")
 
@@ -101,12 +122,21 @@ with tab1:
         # Lógica de coluna dinâmica para o mapa
         col_map = f"{cultura_mapa}_Qtd_T" if cultura_mapa not in ["Gado", "Leite"] else (f"{cultura_mapa}_Cabecas" if cultura_mapa=="Gado" else f"{cultura_mapa}_Mil_Litros")
         
+        # Ajuste de opacidade para destacar o selecionado
+        df['opacidade_mapa'] = 0.4
+        if mun_selecionado != "Rondônia (Geral)":
+            df.loc[df['Municipio'] == mun_selecionado, 'opacidade_mapa'] = 1.0
+
         fig_mapa = px.choropleth_mapbox(
             df, geojson=geojson, locations="Municipio", featureidkey="properties.name",
             color=col_map, color_continuous_scale="Viridis",
-            mapbox_style="carto-darkmatter", zoom=5.2, center={"lat": -10.9, "lon": -62.8},
+            mapbox_style="carto-darkmatter", zoom=zoom_atual, center=centro_atual,
             opacity=0.6, hover_name="Municipio"
         )
+        # Adicionar o contorno se houver seleção
+        if mun_selecionado != "Rondônia (Geral)":
+            fig_mapa.update_traces(marker_line_width=2, marker_line_color="white")
+            
         fig_mapa.update_layout(margin={"r":0,"t":0,"l":0,"b":0}, paper_bgcolor='rgba(0,0,0,0)')
         st.plotly_chart(fig_mapa, use_container_width=True)
 
@@ -173,6 +203,11 @@ with tab2:
         
     with cp1:
         fig_gado = px.choropleth_mapbox(df, geojson=geojson, locations="Municipio", featureidkey="properties.name", color=col_ativa_gado, color_continuous_scale=cor_gado, mapbox_style="carto-darkmatter", zoom=zoom_atual, center=centro_atual, opacity=0.7)
+        
+        # Destaque se houver seleção
+        if mun_selecionado != "Rondônia (Geral)":
+            fig_gado.update_traces(marker_line_width=2, marker_line_color="white")
+            
         fig_gado.update_layout(margin={"r":0,"t":0,"l":0,"b":0}, paper_bgcolor='rgba(0,0,0,0)', coloraxis_showscale=True)
         st.plotly_chart(fig_gado, use_container_width=True, config={'displayModeBar': False})
 
