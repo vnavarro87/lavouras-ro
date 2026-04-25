@@ -26,3 +26,12 @@ __pycache__/
 # Python
 *.pyc
 .env
+.venv/
+venv/
+
+# JSON temporários
+*.json.tmp
+
+# OS
+.DS_Store
+Thumbs.db

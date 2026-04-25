@@ -68,3 +68,9 @@ Detalhamento completo em [METODOLOGIA.md](METODOLOGIA.md).
 ## Sobre
 
 Projeto de portfólio com foco em dados públicos do agronegócio brasileiro. Objetivo: praticar pipeline ETL com API pública, visualização geoespacial e entrega reproduzível — sem prometer mais do que os dados permitem.
+
+## Licença
+
+Copyright (C) 2026 Vinicius Navarro.
+
+Este projeto está licenciado sob a [GNU Affero General Public License v3.0](LICENSE). Em resumo: você pode usar, estudar, modificar e redistribuir, mas qualquer trabalho derivado — inclusive uso como serviço de rede — precisa ser disponibilizado sob a mesma licença. Para licenciamento comercial sob outros termos, entre em contato.
