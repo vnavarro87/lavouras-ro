@@ -141,7 +141,8 @@ with tab1:
             df, geojson=geojson, locations="Municipio", featureidkey="properties.name",
             color=col_map, color_continuous_scale="Viridis",
             mapbox_style="carto-darkmatter", zoom=zoom_atual, center=centro_atual,
-            opacity=0.6, hover_name="Municipio"
+            opacity=0.6, hover_name="Municipio",
+            labels={col_map: "Volume (T/Un)"}
         )
         # Adicionar o contorno se houver seleção
         if mun_selecionado != "Rondônia (Geral)":
@@ -216,7 +217,12 @@ with tab2:
         st.table(df.nlargest(5, col_ativa_gado)[["Municipio", col_ativa_gado]])
         
     with cp1:
-        fig_gado = px.choropleth_mapbox(df, geojson=geojson, locations="Municipio", featureidkey="properties.name", color=col_ativa_gado, color_continuous_scale=cor_gado, mapbox_style="carto-darkmatter", zoom=zoom_atual, center=centro_atual, opacity=0.7)
+        fig_gado = px.choropleth_mapbox(
+            df, geojson=geojson, locations="Municipio", featureidkey="properties.name", 
+            color=col_ativa_gado, color_continuous_scale=cor_gado, 
+            mapbox_style="carto-darkmatter", zoom=zoom_atual, center=centro_atual, opacity=0.7,
+            labels={col_ativa_gado: "Efetivo/Vol."}
+        )
         
         # Destaque se houver seleção
         if mun_selecionado != "Rondônia (Geral)":
