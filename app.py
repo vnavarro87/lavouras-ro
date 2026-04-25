@@ -201,59 +201,66 @@ st.plotly_chart(fig_mapa, use_container_width=True)
 
 st.markdown("---")
 
-# --- RANKING E SCATTER ---
-col_r, col_s = st.columns([1, 2])
+# --- RANKINGS ---
+st.subheader("Análise de Performance")
+col_r1, col_r2 = st.columns(2)
 
-with col_r:
-    st.subheader(f"Top 10 — {cultura_sel}")
-    top10 = df[df[cfg["col_qtd"]] > 0].nlargest(10, cfg["col_qtd"])[["Municipio", cfg["col_qtd"]]].copy()
-    top10.columns = ["Município", "Produção (t)"]
-    top10["Produção (t)"] = top10["Produção (t)"].map(lambda v: f"{v:,.0f}")
-    st.dataframe(top10, hide_index=True, use_container_width=True)
+df_rank = df[df[cfg["col_qtd"]] > 0].copy()
+media_prod = df[df[cfg["col_prod"]] > 0][cfg["col_prod"]].mean()
+df_rank["cor_prod"] = df_rank[cfg["col_prod"]].apply(
+    lambda v: "#00d26a" if v >= media_prod else "#6b7280"
+)
 
-with col_s:
-    df_sc = df[df[cfg["col_qtd"]] > 0].copy()
-
-    if cfg["col_area"]:
-        # Soja e Milho: Área × Produtividade
-        st.subheader("Área plantada × Produtividade")
-        fig_sc = px.scatter(
-            df_sc, x=cfg["col_area"], y=cfg["col_prod"],
-            size=cfg["col_qtd"], hover_name="Municipio",
-            labels={cfg["col_area"]: "Área plantada (ha)", cfg["col_prod"]: "Produtividade (kg/ha)"},
-            color_discrete_sequence=["#00d26a"],
-        )
-        legenda_scatter = (
-            "Cada bolha é um município. Tamanho = produção total. "
-            "Acima da linha: produtividade superior à média estadual."
-        )
-    else:
-        # Café e Cacau: Produção × Produtividade
-        st.subheader("Produção × Produtividade")
-        fig_sc = px.scatter(
-            df_sc, x=cfg["col_qtd"], y=cfg["col_prod"],
-            size=cfg["col_valor"], hover_name="Municipio",
-            labels={cfg["col_qtd"]: "Produção (t)", cfg["col_prod"]: "Produtividade (kg/ha)"},
-            color_discrete_sequence=["#00d26a"],
-        )
-        legenda_scatter = (
-            "Cada bolha é um município. Tamanho = valor da produção. "
-            "Acima da linha: produtividade superior à média estadual."
-        )
-
-    media_prod = df_sc[cfg["col_prod"]].mean()
-    fig_sc.add_hline(
-        y=media_prod, line_dash="dash", line_color="white",
-        annotation_text=f"Média estadual: {media_prod:,.0f} kg/ha",
-        annotation_position="top right",
+# Gráfico 1: Top 15 por Produção
+with col_r1:
+    top15_prod = df_rank.nlargest(15, cfg["col_qtd"]).sort_values(cfg["col_qtd"])
+    fig_prod = px.bar(
+        top15_prod, x=cfg["col_qtd"], y="Municipio", orientation="h",
+        labels={cfg["col_qtd"]: "Produção (t)", "Municipio": ""},
+        title=f"Quem mais produz — {cultura_sel}",
+        color_discrete_sequence=["#00d26a"],
     )
-    fig_sc.update_layout(
+    fig_prod.update_layout(
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
         font_color="white",
+        title_font_size=14,
+        margin={"t": 40, "b": 0, "l": 0, "r": 0},
+        showlegend=False,
     )
-    st.plotly_chart(fig_sc, use_container_width=True)
-    st.caption(legenda_scatter)
+    fig_prod.update_traces(marker_color="#00d26a")
+    st.plotly_chart(fig_prod, use_container_width=True)
+
+# Gráfico 2: Top 15 por Produtividade (colorido por acima/abaixo da média)
+with col_r2:
+    top15_eff = df_rank[df_rank[cfg["col_prod"]] > 0].nlargest(15, cfg["col_prod"]).sort_values(cfg["col_prod"])
+    fig_eff = px.bar(
+        top15_eff, x=cfg["col_prod"], y="Municipio", orientation="h",
+        labels={cfg["col_prod"]: "Produtividade (kg/ha)", "Municipio": ""},
+        title=f"Quem produz melhor (kg/ha) — {cultura_sel}",
+        color="cor_prod",
+        color_discrete_map="identity",
+    )
+    fig_eff.add_vline(
+        x=media_prod, line_dash="dash", line_color="white",
+        annotation_text=f"Média: {media_prod:,.0f} kg/ha",
+        annotation_position="top right",
+        annotation_font_color="white",
+    )
+    fig_eff.update_layout(
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font_color="white",
+        title_font_size=14,
+        margin={"t": 40, "b": 0, "l": 0, "r": 0},
+        showlegend=False,
+    )
+    st.plotly_chart(fig_eff, use_container_width=True)
+
+st.caption(
+    "Volume alto não significa eficiência alta — os dois rankings juntos mostram quem produz muito "
+    "e quem produz bem. Verde = acima da média estadual de produtividade."
+)
 
 st.markdown("---")
 
