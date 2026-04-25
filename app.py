@@ -70,16 +70,27 @@ zoom_atual = 5.6
 centro_atual = {"lat": -10.9, "lon": -62.8}
 
 if mun_selecionado != "Rondônia (Geral)":
-    # Buscar coordenadas no GeoJSON para centralizar
     for feature in geojson['features']:
         if feature['properties']['name'] == mun_selecionado:
-            # Cálculo simplificado de centro (média das coordenadas)
-            coords = feature['geometry']['coordinates'][0]
-            if isinstance(coords[0], list): coords = coords[0] # Lógica para MultiPolygon simples
-            lon = sum([c[0] for c in coords]) / len(coords)
-            lat = sum([c[1] for c in coords]) / len(coords)
-            centro_atual = {"lat": lat, "lon": lon}
-            zoom_atual = 8.5
+            geom = feature['geometry']
+            # Extrair todos os pontos para calcular a média (centroide simples)
+            pontos = []
+            if geom['type'] == 'Polygon':
+                pontos = geom['coordinates'][0]
+            elif geom['type'] == 'MultiPolygon':
+                # Achata as listas do MultiPolygon
+                for poli in geom['coordinates']:
+                    for anel in poli:
+                        pontos.extend(anel)
+            
+            if pontos:
+                # Filtrar caso venha algum dado corrompido (garantir que cada p seja [lon, lat])
+                pontos_validos = [p for p in pontos if isinstance(p, list) and len(p) >= 2]
+                if pontos_validos:
+                    lon = sum([p[0] for p in pontos_validos]) / len(pontos_validos)
+                    lat = sum([p[1] for p in pontos_validos]) / len(pontos_validos)
+                    centro_atual = {"lat": lat, "lon": lon}
+                    zoom_atual = 8.5
             break
 
 # --- HEADER E KPIs TOTAIS (O IMPACTO) ---
