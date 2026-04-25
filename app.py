@@ -228,7 +228,7 @@ with col_r1:
         margin={"t": 40, "b": 0, "l": 0, "r": 0},
         showlegend=False,
     )
-    fig_prod.update_traces(marker_color="#00d26a")
+    fig_prod.update_traces(marker_color=top15_prod["cor_prod"].tolist())
     st.plotly_chart(fig_prod, use_container_width=True)
 
 # Gráfico 2: Todos os municípios por Produtividade (colorido por acima/abaixo da média)
