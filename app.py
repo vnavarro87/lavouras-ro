@@ -1,375 +1,200 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
 import json
 import os
-import google.generativeai as genai
-
-# --- ESTADO INICIAL ---
-api_key = None
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(
-    page_title="RO Agro Intelligence Hub",
+    page_title="Mapa da Soja em Rondônia",
     layout="wide"
 )
 
-# --- ESTILO CSS PREMIUM ---
+# --- ESTILO ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
     html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
-    .stTabs [data-baseweb="tab-list"] { gap: 24px; }
-    .stTabs [data-baseweb="tab"] { 
-        height: 50px; white-space: pre-wrap; background-color: #1e2130; 
-        border-radius: 10px 10px 0 0; color: white; padding: 10px 20px;
+    .disclaimer {
+        background-color: #2b2f3e; color: #d0d4dc;
+        padding: 10px 14px; border-radius: 6px;
+        border-left: 3px solid #00d26a;
+        font-size: 13px; margin-bottom: 16px;
     }
-    .stTabs [aria-selected="true"] { background-color: #00d26a !important; font-weight: bold; }
-    .metric-card { background-color: #1e2130; border-radius: 15px; padding: 15px; border-top: 4px solid #00d26a; }
-    .metric-value { font-size: 24px; font-weight: bold; }
-    .metric-label { font-size: 12px; color: #808495; text-transform: uppercase; }
     </style>
-    """, unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
-# --- 1. CARREGAMENTO DE DADOS ---
+# --- CARREGAMENTO DE DADOS ---
+@st.cache_data
 def carregar_dados():
     pasta = os.path.dirname(__file__)
     df = pd.read_csv(os.path.join(pasta, "dados_agro_ro_master.csv"))
     for col in df.columns:
-        if col != "Municipio": df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
-    
+        if col != "Municipio":
+            df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
+
     with open(os.path.join(pasta, "mapa_ro.json"), encoding='utf-8') as f:
         geojson = json.load(f)
     return df, geojson
 
 df, geojson = carregar_dados()
 
+# Apenas colunas de soja são usadas neste projeto
+df = df[["Municipio", "Soja_Qtd_T", "Soja_Valor_Mil",
+         "Soja_Prod_KgHa", "Soja_AreaPlant_Ha"]].copy()
+
 # --- SIDEBAR ---
 with st.sidebar:
-    st.title("Agro Intelligence")
-    st.markdown("Gestão Estratégica Regional")
+    st.title("Mapa da Soja | RO")
+    st.caption("Produção municipal a partir de dados públicos do IBGE.")
     st.markdown("---")
-    
-    municipios_lista = ["Rondônia (Geral)"] + sorted(df['Municipio'].unique().tolist())
-    mun_selecionado = st.selectbox("Foco Regional:", municipios_lista, key="sel_sidebar_municipio")
-    
-    st.markdown("---")
-    st.subheader("Auditoria de Dados")
-    st.caption("""
-    **Fontes Oficiais (API SIDRA/IBGE):**
-    - **Agricultura (PAM 2023):** Dados de safra mais recentes.
-    - **Pecuária (PPM 2023):** Efetivo de rebanho atualizado.
-    - **PIB Municipal (2021):** Série histórica oficial (IBGE possui 2 anos de defasagem padrão na divulgação de contas regionais).
-    - **Geometria:** Malha Digital IBGE 2022.
-    """)
-    st.markdown('<div style="background-color: #3d4156; color: #ffbd45; padding: 10px; border-radius: 5px; font-size: 13px; margin-bottom: 10px;"><b>Nota Técnica:</b> As métricas de representatividade utilizam o PIB 2021 como baseline econômico.</div>', unsafe_allow_html=True)
-    st.markdown('<div style="font-size: 12px; color: #808495; border-top: 1px solid #3d4156; padding-top: 10px;">Monitoramento em tempo real via API SIDRA.</div>', unsafe_allow_html=True)
-    
-    with st.expander("Configurações Analíticas"):
-        api_key = st.text_input("Gemini API Key:", type="password")
-        if api_key: genai.configure(api_key=api_key)
 
-# --- LÓGICA DE FOCO REGIONAL (ZOOM E CENTRO) ---
+    municipios_lista = ["Rondônia (todos)"] + sorted(df['Municipio'].unique().tolist())
+    mun_selecionado = st.selectbox("Município em foco:", municipios_lista)
+
+    st.markdown("---")
+    st.subheader("Fontes")
+    st.caption("""
+    - **Produção, área e valor:** IBGE / PAM 2023 (tabela 1612)
+    - **Geometria:** Malha Municipal IBGE 2022
+    - **Coleta:** API SIDRA, último período disponível
+    """)
+    st.caption("Código aberto no GitHub. Veja `METODOLOGIA.md` para detalhes.")
+
+# --- HEADER ---
+st.title("Mapa da Soja em Rondônia")
+st.markdown(
+    '<div class="disclaimer">'
+    'Visualização de dados públicos do IBGE (PAM 2023). '
+    'Os números refletem o último ano fechado da Produção Agrícola Municipal — '
+    'não é informação em tempo real.'
+    '</div>',
+    unsafe_allow_html=True
+)
+
+# --- LÓGICA DE FOCO REGIONAL ---
 zoom_atual = 5.6
 centro_atual = {"lat": -10.9, "lon": -62.8}
 
-if mun_selecionado != "Rondônia (Geral)":
+if mun_selecionado != "Rondônia (todos)":
     for feature in geojson['features']:
         if feature['properties']['name'] == mun_selecionado:
             geom = feature['geometry']
-            # Extrair todos os pontos para calcular a média (centroide simples)
             pontos = []
             if geom['type'] == 'Polygon':
                 pontos = geom['coordinates'][0]
             elif geom['type'] == 'MultiPolygon':
-                # Achata as listas do MultiPolygon
                 for poli in geom['coordinates']:
                     for anel in poli:
                         pontos.extend(anel)
-            
-            if pontos:
-                # Filtrar caso venha algum dado corrompido (garantir que cada p seja [lon, lat])
-                pontos_validos = [p for p in pontos if isinstance(p, list) and len(p) >= 2]
-                if pontos_validos:
-                    lon = sum([p[0] for p in pontos_validos]) / len(pontos_validos)
-                    lat = sum([p[1] for p in pontos_validos]) / len(pontos_validos)
-                    centro_atual = {"lat": lat, "lon": lon}
-                    zoom_atual = 8.5
+            pontos_validos = [p for p in pontos if isinstance(p, list) and len(p) >= 2]
+            if pontos_validos:
+                lon = sum(p[0] for p in pontos_validos) / len(pontos_validos)
+                lat = sum(p[1] for p in pontos_validos) / len(pontos_validos)
+                centro_atual = {"lat": lat, "lon": lon}
+                zoom_atual = 8.5
             break
 
-# --- HEADER E KPIs TOTAIS (O IMPACTO) ---
-st.title("Agro Intelligence Hub | Rondônia")
-if mun_selecionado != "Rondônia (Geral)":
-    st.markdown(f'<div style="background-color: #00d26a; color: white; padding: 10px; border-radius: 5px; font-weight: bold;">Foco Estratégico Ativado: {mun_selecionado}</div>', unsafe_allow_html=True)
-else:
-    st.markdown("Análise Estratégica de Produção e Competitividade Setorial")
+# --- KPIs ---
+df_foco = df if mun_selecionado == "Rondônia (todos)" else df[df['Municipio'] == mun_selecionado]
 
-# Cálculo de Métricas (Estado ou Município)
-df_foco = df if mun_selecionado == "Rondônia (Geral)" else df[df['Municipio'] == mun_selecionado]
-
-pib_val = df_foco['PIB_Agro_Mil'].sum() / 1e6 if mun_selecionado == "Rondônia (Geral)" else df_foco['PIB_Agro_Mil'].sum() / 1e3
-vbp_val = df_foco['Valor_Agricola_Total_Mil'].sum() / 1e6 if mun_selecionado == "Rondônia (Geral)" else df_foco['Valor_Agricola_Total_Mil'].sum() / 1e3
-rebanho_val = df_foco['Gado_Cabecas'].sum() / 1e6 if mun_selecionado == "Rondônia (Geral)" else df_foco['Gado_Cabecas'].sum() / 1e3
-area_val = df_foco[[c for c in df_foco.columns if 'AreaPlant_Ha' in c]].sum().sum() / 1e6 if mun_selecionado == "Rondônia (Geral)" else df_foco[[c for c in df_foco.columns if 'AreaPlant_Ha' in c]].sum().sum() / 1e3
-
-label_unidade = "Bi" if mun_selecionado == "Rondônia (Geral)" else "Mi"
-label_gado = "Mi" if mun_selecionado == "Rondônia (Geral)" else "mil"
+producao_total = df_foco['Soja_Qtd_T'].sum()
+area_total = df_foco['Soja_AreaPlant_Ha'].sum()
+valor_total = df_foco['Soja_Valor_Mil'].sum()
+prod_media = (producao_total * 1000 / area_total) if area_total > 0 else 0
 
 c1, c2, c3, c4 = st.columns(4)
-with c1: st.metric("PIB Agro", f"R$ {pib_val:.2f} {label_unidade}")
-with c2: st.metric("Valor Produção", f"R$ {vbp_val:.2f} {label_unidade}")
-with c3: st.metric("Rebanho", f"{rebanho_val:.2f} {label_gado}")
-with c4: st.metric("Área Plantada", f"{area_val:.2f} {label_unidade if mun_selecionado == 'Rondônia (Geral)' else 'mil Ha'}")
+with c1:
+    st.metric("Produção", f"{producao_total/1e6:.2f} Mi t" if producao_total >= 1e6 else f"{producao_total:,.0f} t")
+with c2:
+    st.metric("Área Plantada", f"{area_total/1e3:,.1f} mil ha")
+with c3:
+    st.metric("Produtividade Média", f"{prod_media:,.0f} kg/ha")
+with c4:
+    st.metric("Valor da Produção", f"R$ {valor_total/1e3:.1f} Mi" if valor_total >= 1e3 else f"R$ {valor_total:,.0f} mil")
 
 st.markdown("---")
 
-# --- NAVEGAÇÃO PRINCIPAL ---
-tab1, tab2, tab3 = st.tabs(["Visão Geográfica", "Análise de Performance", "Sazonalidade e Mercado"])
+# --- SEÇÃO 1: MAPA ---
+st.subheader("Distribuição da produção por município")
 
-# --- ABA 1: VISÃO GEOGRÁFICA (O ONDE) ---
-with tab1:
-    col_mapa, col_info = st.columns([2, 1])
-    
-    with col_mapa:
-        st.subheader("Distribuição Espacial da Produção")
-        cultura_mapa = st.selectbox("Perspectiva Analítica:", ["Soja", "Milho", "Cafe", "Cacau", "Gado", "Leite"], key="sel_mapa_camada")
-        
-        # Lógica de coluna dinâmica para o mapa
-        col_map = f"{cultura_mapa}_Qtd_T" if cultura_mapa not in ["Gado", "Leite"] else (f"{cultura_mapa}_Cabecas" if cultura_mapa=="Gado" else f"{cultura_mapa}_Mil_Litros")
-        
-        # Ajuste de opacidade para destacar o selecionado
-        df['opacidade_mapa'] = 0.4
-        if mun_selecionado != "Rondônia (Geral)":
-            df.loc[df['Municipio'] == mun_selecionado, 'opacidade_mapa'] = 1.0
+metrica_mapa = st.radio(
+    "Métrica do mapa:",
+    ["Quantidade (t)", "Produtividade (kg/ha)", "Área plantada (ha)"],
+    horizontal=True
+)
+mapa_col = {
+    "Quantidade (t)": "Soja_Qtd_T",
+    "Produtividade (kg/ha)": "Soja_Prod_KgHa",
+    "Área plantada (ha)": "Soja_AreaPlant_Ha"
+}[metrica_mapa]
 
-        fig_mapa = px.choropleth_mapbox(
-            df, geojson=geojson, locations="Municipio", featureidkey="properties.name",
-            color=col_map, color_continuous_scale="Viridis",
-            mapbox_style="carto-darkmatter", zoom=zoom_atual, center=centro_atual,
-            opacity=0.6, hover_name="Municipio",
-            labels={col_map: "Volume (T/Un)"}
-        )
-        # Adicionar o contorno se houver seleção
-        if mun_selecionado != "Rondônia (Geral)":
-            fig_mapa.update_traces(marker_line_width=2, marker_line_color="white")
-            
-        fig_mapa.update_layout(
-            margin={"r":0,"t":0,"l":0,"b":0}, 
-            paper_bgcolor='rgba(0,0,0,0)',
-            uirevision=mun_selecionado # Mantém o zoom manual do usuário ao trocar cultura
-        )
-        st.plotly_chart(fig_mapa, use_container_width=True)
+fig_mapa = px.choropleth_mapbox(
+    df, geojson=geojson, locations="Municipio", featureidkey="properties.name",
+    color=mapa_col, color_continuous_scale="Viridis",
+    mapbox_style="carto-darkmatter", zoom=zoom_atual, center=centro_atual,
+    opacity=0.7, hover_name="Municipio",
+    labels={mapa_col: metrica_mapa}
+)
+if mun_selecionado != "Rondônia (todos)":
+    fig_mapa.update_traces(marker_line_width=2, marker_line_color="white")
+fig_mapa.update_layout(
+    margin={"r": 0, "t": 0, "l": 0, "b": 0},
+    paper_bgcolor='rgba(0,0,0,0)',
+    uirevision=mun_selecionado
+)
+st.plotly_chart(fig_mapa, use_container_width=True)
 
-    with col_info:
-        st.subheader("Destaques Regionais")
-        if mun_selecionado == "Rondônia (Geral)":
-            st.markdown('<div style="color: #808495; font-size: 14px;">Selecione um município na barra lateral para detalhamento local.</div>', unsafe_allow_html=True)
-            # Top 5 Produtores
-            top5 = df.nlargest(5, col_map)[['Municipio', col_map]]
-            top5 = top5.rename(columns={col_map: "Volume (T/Un)"})
-            st.write(f"Maiores produtores de {cultura_mapa}:")
-            st.table(top5)
-        else:
-            mun_df = df[df['Municipio'] == mun_selecionado].iloc[0]
-            st.markdown(f'<div style="background-color: #00d26a; color: white; padding: 10px; border-radius: 5px; font-weight: bold; margin-bottom: 10px;">Análise Regional: {mun_selecionado}</div>', unsafe_allow_html=True)
-            st.write(f"PIB Agro: R$ {mun_df['PIB_Agro_Mil']/1000:,.1f} Milhões")
-            st.write(f"Representatividade no Estado: {(mun_df['PIB_Agro_Mil'] / df['PIB_Agro_Mil'].sum() * 100):.2f}%")
+st.markdown("---")
 
-# --- ABA 2: ANÁLISE DE PERFORMANCE ---
-with tab2:
-    st.header("Análise de Lavouras")
-    st.caption("Fonte: IBGE - Produção Agrícola Municipal (PAM) 2023")
-    
-    c1, c2 = st.columns([1, 4])
-    with c1:
-        cultura = st.selectbox("Cultura:", ["Soja", "Milho", "Cafe", "Cacau"], key="sel_perf_cultura")
-        metrica = st.selectbox("Métrica:", ["Quantidade", "Produtividade", "Valor"], key="sel_perf_metrica")
-        
-        map_cols = {
-            "Quantidade": f"{cultura}_Qtd_T",
-            "Produtividade": f"{cultura}_Prod_KgHa",
-            "Valor": f"{cultura}_Valor_Mil"
-        }
-        col_ativa = map_cols[metrica]
-        
-    with c2:
-        mc1, mc2, mc3 = st.columns(3)
-        if col_ativa in df.columns:
-            col_qtd = f"{cultura}_Qtd_T"
-            if col_qtd in df.columns:
-                total_prod = df[col_qtd].sum()
-                max_prod = df[col_qtd].max()
-                lider = df.loc[df[col_qtd].idxmax(), "Municipio"] if not df.empty else "N/A"
-                
-                mc1.metric(f"Produção Total ({cultura})", f"{total_prod:,.0f} T")
-                mc2.metric("Líder de Produção", lider)
-                mc3.metric("Recorde Municipal", f"{max_prod:,.0f} T")
+# --- SEÇÃO 2: RANKINGS E PERFORMANCE ---
+col_r, col_s = st.columns([1, 2])
 
-    st.divider()
-    
-    # Seção Pecuária dentro da Aba 2
-    st.subheader("Análise de Pecuária e Origem Animal")
-    cp1, cp2 = st.columns([3, 1])
-    with cp2:
-        finalidade = st.selectbox("Analisar por:", ["Corte (Rebanho)", "Leite (Produção)"], key="sel_pecuaria_finalidade")
-        col_ativa_gado = "Gado_Cabecas" if "Corte" in finalidade else "Leite_Mil_Litros"
-        cor_gado = "YlOrBr" if "Corte" in finalidade else "GnBu"
-        unidade_g = "Cab." if "Corte" in finalidade else "Mil Litros"
-        
-        total_v = df[col_ativa_gado].sum()
-        st.metric(f"Total RO ({finalidade})", f"{total_v:,.0f} {unidade_g}")
-        st.markdown("---")
-        st.write(f"Top 5 {finalidade}:")
-        top5_gado = df.nlargest(5, col_ativa_gado)[["Municipio", col_ativa_gado]]
-        top5_gado = top5_gado.rename(columns={col_ativa_gado: "Efetivo/Produção"})
-        st.table(top5_gado)
-        
-    with cp1:
-        fig_gado = px.choropleth_mapbox(
-            df, geojson=geojson, locations="Municipio", featureidkey="properties.name", 
-            color=col_ativa_gado, color_continuous_scale=cor_gado, 
-            mapbox_style="carto-darkmatter", zoom=zoom_atual, center=centro_atual, opacity=0.7,
-            labels={col_ativa_gado: "Efetivo/Vol."}
-        )
-        
-        # Destaque se houver seleção
-        if mun_selecionado != "Rondônia (Geral)":
-            fig_gado.update_traces(marker_line_width=2, marker_line_color="white")
-            
-        fig_gado.update_layout(
-            margin={"r":0,"t":0,"l":0,"b":0}, 
-            paper_bgcolor='rgba(0,0,0,0)', 
-            coloraxis_showscale=True,
-            uirevision=mun_selecionado # Preserva o zoom manual
-        )
-        st.plotly_chart(fig_gado, use_container_width=True, config={'displayModeBar': False})
+with col_r:
+    st.subheader("Top 10 produtores")
+    top10 = df.nlargest(10, "Soja_Qtd_T")[["Municipio", "Soja_Qtd_T"]].copy()
+    top10.columns = ["Município", "Produção (t)"]
+    top10["Produção (t)"] = top10["Produção (t)"].map(lambda v: f"{v:,.0f}")
+    st.dataframe(top10, hide_index=True, use_container_width=True)
 
-    # Matriz de Performance
-    st.divider()
-    st.subheader("Matriz de Performance e Eficiência Técnica")
-    
-    df_perf = df.copy()
-    col_prod = f"{cultura}_Prod_KgHa"
-    # Fallback para Area Colhida caso a Plantada não exista no IBGE para aquela cultura
-    col_area = f"{cultura}_AreaPlant_Ha" if f"{cultura}_AreaPlant_Ha" in df.columns else f"{cultura}_AreaColh_Ha"
-    col_qtd = f"{cultura}_Qtd_T"
-    
-    if col_prod in df_perf.columns and col_area in df_perf.columns:
-        media_prod = df_perf[df_perf[col_prod] > 0][col_prod].mean()
-        df_perf['Performance_Relativa'] = (df_perf[col_prod] / media_prod - 1) * 100
-        
-        c_p1, c_p2 = st.columns([2, 1])
-        with c_p1:
-            fig_perf = px.scatter(
-                df_perf[df_perf[col_area] > 0], x=col_area, y=col_prod,
-                size=col_qtd, color="Performance_Relativa",
-                hover_name="Municipio", color_continuous_scale="RdYlGn",
-                labels={col_area: "Área Plantada (Ha)", col_prod: "Produtividade (Kg/Ha)"},
-                title=f"Posicionamento Competitivo: {cultura}"
-            )
-            fig_perf.add_hline(y=media_prod, line_dash="dash", line_color="white", annotation_text="Média Estadual")
-            fig_perf.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font_color="white")
-            st.plotly_chart(fig_perf, use_container_width=True)
-        with c_p2:
-            st.markdown(f"""
-            **Leitura Técnica:**
-            - Municípios em **Verde** estão acima da média estadual de {media_prod:,.0f} Kg/Ha.
-            - O tamanho da bolha indica o volume total produzido.
-            - O objetivo estratégico é mover os municípios do quadrante inferior para o superior através de tecnologia.
-            """)
-            
-    st.markdown("---")
+with col_s:
+    st.subheader("Área x Produtividade")
+    df_scatter = df[df["Soja_AreaPlant_Ha"] > 0].copy()
+    media_prod = df_scatter["Soja_Prod_KgHa"].mean()
 
-# --- ABA 3: SAZONALIDADE E MERCADO ---
-with tab3:
-    st.header("Inteligência Estratégica e Riscos")
-    
-    c_int1, c_int2 = st.columns(2)
-    
-    with c_int1:
-        st.subheader("Análise de Sazonalidade e Clima")
-        meses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"]
-        mes_sel = st.select_slider("Período de Análise:", options=meses, value="Janeiro")
-        
-        calendario = {
-            "Janeiro": {"Acao": "Colheita Soja / Crescimento Café", "Risco": "Ferrugem Asiática (Soja) / Pluviosidade elevada (300mm) impactando a colheita precoce."},
-            "Fevereiro": {"Acao": "Pico da Colheita Soja / Plantio Milho", "Risco": "Gargalos logísticos por chuvas (280mm) / Janela crítica para Milho Safrinha."},
-            "Março": {"Acao": "Conclusão Soja / Crescimento Milho", "Risco": "Incidência de Lagarta do Cartucho no Milho / Maturação do Café."},
-            "Abril": {"Acao": "Transição para Seca / Colheita Café", "Risco": "Início do estresse hídrico / Pressão de Cigarrinha no Milho."},
-            "Maio": {"Acao": "Pico Colheita Café", "Risco": "Possibilidade de frentes frias e geadas tardias no Cone Sul."},
-            "Junho": {"Acao": "Colheita Milho / Seca Severa", "Risco": "Nível reduzido do Rio Madeira impactando o calado das barcaças."},
-            "Julho": {"Acao": "Entressafra / Logística sob pressão", "Risco": "Incidência de queimadas / Rio Madeira em nível crítico de navegação."},
-            "Agosto": {"Acao": "Vazio Sanitário / Preparo Solo", "Risco": "Baixa umidade relativa / Stress hídrico severo no solo."},
-            "Setembro": {"Acao": "Início Plantio Soja", "Risco": "Irregularidade pluviométrica no estabelecimento inicial da cultura."},
-            "Outubro": {"Acao": "Plantio Intenso", "Risco": "Pressão de lagartas desfolhadoras nas lavouras jovens."},
-            "Novembro": {"Acao": "Desenvolvimento Vegetativo", "Risco": "Necessidade de monitoramento de anomalias climáticas localizadas."},
-            "Dezembro": {"Acao": "Desenvolvimento / Aplicações", "Risco": "Patógenos fúngicos decorrentes da alta umidade (290mm)."},
-        }
-        
-        st.markdown(f'<div style="border-left: 5px solid #00d26a; padding-left: 15px; margin-bottom: 10px;"><b>Status em {mes_sel}:</b> {calendario[mes_sel]["Acao"]}</div>', unsafe_allow_html=True)
-        st.markdown(f'<div style="border-left: 5px solid #ff4b4b; padding-left: 15px;"><b>Alerta de Risco:</b> {calendario[mes_sel]["Risco"]}</div>', unsafe_allow_html=True)
+    fig_scatter = px.scatter(
+        df_scatter,
+        x="Soja_AreaPlant_Ha", y="Soja_Prod_KgHa",
+        size="Soja_Qtd_T", hover_name="Municipio",
+        labels={
+            "Soja_AreaPlant_Ha": "Área plantada (ha)",
+            "Soja_Prod_KgHa": "Produtividade (kg/ha)"
+        },
+        color_discrete_sequence=["#00d26a"]
+    )
+    fig_scatter.add_hline(
+        y=media_prod, line_dash="dash", line_color="white",
+        annotation_text=f"Média estadual: {media_prod:,.0f} kg/ha",
+        annotation_position="top right"
+    )
+    fig_scatter.update_layout(
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        font_color="white"
+    )
+    st.plotly_chart(fig_scatter, use_container_width=True)
 
-    with c_int2:
-        st.subheader("Logística e Fluxos de Exportação")
-        st.markdown("""
-        **Corredor Logístico do Rio Madeira (Arco Norte)**
-        O escoamento da produção de Rondônia via Porto Velho é um diferencial de competitividade:
-        - **Redução de Custos:** Até 30% mais eficiente que o modal rodoviário para o Sul.
-        - **Destinos Principais:** China (55%), Europa (20%) e Oriente Médio (15%).
-        - **Capacidade:** Superior a 10 milhões de toneladas/ano.
-        """)
-        st.markdown('<div style="background-color: #1e2130; padding: 15px; border-radius: 10px; border-left: 5px solid #00d26a;"><b>Nota Estratégica:</b> A dragagem do Rio Madeira é vital para a competitividade do grão rondoniense.</div>', unsafe_allow_html=True)
+    st.caption(
+        "Cada bolha é um município. Tamanho representa a produção total. "
+        "Municípios acima da linha tracejada têm produtividade superior à média estadual."
+    )
 
-    st.divider()
-    st.subheader("Simulador de Valor Bruto (VBP)")
-    p_soja = st.number_input("Preço Soja (Saca/60kg)", 100, 250, 135)
-    p_gado = st.number_input("Preço Boi (@)", 150, 400, 230)
-    
-    vbp_est = (df['Soja_Qtd_T'].sum() / 0.06 * p_soja) + (df['Gado_Cabecas'].sum() * 0.5 * p_gado)
-    st.metric("VBP Projetado (Soja + Carne)", f"R$ {vbp_est/1e9:.2f} Bilhões")
-    st.caption("Cálculo baseado em produtividade média e preços de balcão.")
+st.markdown("---")
 
-    st.divider()
-    st.subheader("Relevância no PIB Agropecuário")
-    df_eco = df.copy()
-    df_eco['Representatividade'] = (df_eco['Valor_Agricola_Total_Mil'] / (df_eco['PIB_Agro_Mil'] + 1)) * 100
-    fig_pib = px.bar(df_eco.nlargest(15, 'PIB_Agro_Mil'), x='PIB_Agro_Mil', y='Municipio', orientation='h', color='Representatividade', title="Maiores PIBs Agropecuários de RO")
-    fig_pib.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font_color="white")
-    st.plotly_chart(fig_pib, use_container_width=True)
-
-# --- FOOTER ---
-st.divider()
-st.subheader("Consultoria Analítica de Dados")
-st.markdown('<div style="background-color: #1e2130; padding: 15px; border-radius: 10px; border-left: 5px solid #00d26a; color: #808495; font-size: 14px;">Plataforma analítica baseada em dados oficiais do IBGE. Foco em precisão e transparência setorial.</div>', unsafe_allow_html=True)
-
-# Sugestões de Análise para o Usuário
-with st.expander("Exemplos de consultas estratégicas para a I.A."):
-    st.markdown("""
-    - Quais são os municípios com maior eficiência técnica (Kg/Ha) no Café em Rondônia?
-    - Analise os municípios com maior dependência econômica de uma única cultura.
-    - Qual a representatividade da Pecuária no PIB Agropecuário do estado?
-    - Compare o perfil produtivo e econômico entre Vilhena e Porto Velho.
-    """)
-
-if "messages" not in st.session_state: st.session_state.messages = []
-for msg in st.session_state.messages:
-    with st.chat_message(msg["role"]): st.markdown(msg["content"])
-
-if p_user := st.chat_input("Ex: Qual o impacto da produtividade em Vilhena?"):
-    with st.chat_message("user"): st.markdown(p_user)
-    st.session_state.messages.append({"role": "user", "content": p_user})
-
-    if not api_key: st.error("Insira a API Key na barra lateral.")
-    else:
-        with st.chat_message("assistant"):
-            with st.spinner("Processando inteligência..."):
-                try:
-                    # Enviar contexto resumido para economizar tokens e ser preciso
-                    ctx = df.to_csv(index=False)
-                    model = genai.GenerativeModel('gemini-flash-latest')
-                    prompt = f"Você é um analista sênior. Use estes dados de RO: {ctx}. Pergunta: {p_user}. Responda com foco em negócios e exportação."
-                    resp = model.generate_content(prompt)
-                    st.markdown(resp.text)
-                    st.session_state.messages.append({"role": "assistant", "content": resp.text})
-                except Exception as e: st.error(f"Erro: {e}")
+# --- RODAPÉ ---
+st.caption(
+    "Dados: IBGE / PAM 2023 (API SIDRA). "
+    "Limitações conhecidas: dados anuais, sem desagregação intra-anual; "
+    "valores monetários em reais correntes do ano de referência. "
+    "Veja `METODOLOGIA.md` para o tratamento aplicado a dados ausentes e suprimidos."
+)

@@ -1,31 +1,54 @@
-# Agro Intelligence Hub | Rondônia
+# Mapa da Soja em Rondônia
 
-Solução de **Business Intelligence (BI) Executivo** focada na análise estratégica e georeferenciada do setor agropecuário do estado de Rondônia. O projeto utiliza uma narrativa de dados (storytelling) para guiar o usuário da visão macroeconômica estadual ao detalhamento técnico municipal.
+Visualização interativa da produção de soja nos 52 municípios de Rondônia, a partir de dados públicos do IBGE (Pesquisa Agrícola Municipal — PAM 2023).
 
-## Estrutura de Navegação Estratégica
+Construído em Python com Streamlit e Plotly. Os dados são coletados automaticamente da API SIDRA, validados e renderizados em um mapa coroplético com filtros por métrica (quantidade, produtividade, área plantada).
 
-O dashboard é organizado em três pilares fundamentais que respondem às perguntas críticas do setor:
+## O que o projeto mostra
 
-### 1. Visão Geográfica (O Onde)
-Foco na distribuição espacial da produção. Permite identificar polos produtivos, líderes regionais e a capilaridade das principais culturas e rebanhos em todo o território rondoniense.
+- Mapa coroplético dos 52 municípios com escolha de métrica
+- KPIs estaduais ou por município selecionado
+- Top 10 produtores
+- Dispersão "Área plantada × Produtividade" com média estadual destacada
 
-### 2. Análise de Performance (O Como)
-Avaliação da eficiência técnica municipal. Utiliza uma Matriz de Performance que cruza Produtividade (Kg/Ha) vs. Escala (Ha), permitindo identificar especialistas de alta performance e gargalos tecnológicos relativos à média estadual.
+## Como rodar
 
-### 3. Sazonalidade e Mercado (O Quando e o Quanto)
-Monitoramento de ciclos produtivos e projeções financeiras. Integra um calendário de riscos climáticos e fitossanitários com um simulador dinâmico de Valor Bruto da Produção (VBP) baseado em cotações de mercado.
+```bash
+git clone <repo>
+cd mapa_producao_ro
+pip install -r requirements.txt
+streamlit run app.py
+```
 
-## Destaques Técnicos
-- **KPIs em Tempo Real:** Visão imediata do PIB Agropecuário, VBP, Rebanho Total e Área Cultivada.
-- **Pipeline de Dados Auditado:** Integração automatizada via API SIDRA (IBGE) com as tabelas PAM, PPM e PIB Municipal.
-- **Arquitetura Executiva:** Interface minimalista desenvolvida em Python e Streamlit, focada em UX para tomada de decisão.
+Para reexecutar a coleta a partir do SIDRA:
 
-## Estrutura de Auditoria de Dados
-Fontes oficiais utilizadas:
-- IBGE Tabela 1612/1613 (Agricultura)
-- IBGE Tabela 3939 (Pecuária)
-- IBGE Tabela 74 (Leite)
-- IBGE Tabela 5938 (PIB Municipal - Valor Adicionado Agropecuário)
+```bash
+python coleta_geral.py
+python validate_data.py
+```
 
----
-*Desenvolvido para transformar dados públicos em inteligência estratégica para o agronegócio de Rondônia.*
+## Estrutura
+
+```
+mapa_producao_ro/
+├── app.py                       # Aplicação Streamlit
+├── coleta_geral.py              # ETL via API SIDRA
+├── validate_data.py             # Asserções de integridade
+├── dados_agro_ro_master.csv     # Dataset gerado pela coleta
+├── mapa_ro.json                 # Geometria municipal (IBGE)
+├── METODOLOGIA.md               # Fontes, tratamento e limitações
+├── requirements.txt
+└── README.md
+```
+
+## Fontes e limitações
+
+Dados: IBGE / PAM 2023 via API SIDRA (tabela 1612). Geometria: Malha Municipal IBGE 2022.
+
+Os dados são **anuais e refletem o último ano fechado**. Não é informação em tempo real. Células suprimidas por sigilo estatístico são tratadas como zero para fins de visualização — o script de coleta imprime um relatório com a contagem afetada.
+
+Detalhamento completo em [METODOLOGIA.md](METODOLOGIA.md).
+
+## Sobre
+
+Primeiro projeto público com foco em dados do agronegócio brasileiro. O objetivo é praticar pipeline ETL, visualização geoespacial e entrega reproduzível, sem prometer mais do que os dados públicos permitem.

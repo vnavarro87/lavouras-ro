@@ -1,0 +1,28 @@
+# Scripts de rascunho e coletas anteriores
+baixar_mapa.py
+coleta_cafe.py
+coleta_dados.py
+coleta_pecuaria.py
+coleta_sidra.py
+limpeza_dados.py
+unificar_dados.py
+
+# CSVs intermediários e de rascunho
+cafe_ro_avancado.csv
+cafe_ro_limpo.csv
+dados_agricolas_ro.csv
+dados_agricolas_ro_premium.csv
+municipios_ro.csv
+pecuaria_ro_limpo.csv
+soja_ro_avancado.csv
+soja_ro_bruto.csv
+soja_ro_limpo.csv
+
+# Pastas
+scratch/
+__pycache__/
+.streamlit/secrets.toml
+
+# Python
+*.pyc
+.env
