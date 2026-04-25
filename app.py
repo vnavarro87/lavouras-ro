@@ -161,6 +161,7 @@ with tab1:
             st.markdown('<div style="color: #808495; font-size: 14px;">Selecione um município na barra lateral para detalhamento local.</div>', unsafe_allow_html=True)
             # Top 5 Produtores
             top5 = df.nlargest(5, col_map)[['Municipio', col_map]]
+            top5 = top5.rename(columns={col_map: "Volume (T/Un)"})
             st.write(f"Maiores produtores de {cultura_mapa}:")
             st.table(top5)
         else:
@@ -214,7 +215,9 @@ with tab2:
         st.metric(f"Total RO ({finalidade})", f"{total_v:,.0f} {unidade_g}")
         st.markdown("---")
         st.write(f"Top 5 {finalidade}:")
-        st.table(df.nlargest(5, col_ativa_gado)[["Municipio", col_ativa_gado]])
+        top5_gado = df.nlargest(5, col_ativa_gado)[["Municipio", col_ativa_gado]]
+        top5_gado = top5_gado.rename(columns={col_ativa_gado: "Efetivo/Produção"})
+        st.table(top5_gado)
         
     with cp1:
         fig_gado = px.choropleth_mapbox(
