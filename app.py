@@ -183,10 +183,10 @@ opcoes_mapa = {"Quantidade (t)": cfg["col_qtd"], "Produtividade (kg/ha)": cfg["c
 metrica_mapa = st.radio("Métrica:", list(opcoes_mapa.keys()), horizontal=True)
 col_mapa = opcoes_mapa[metrica_mapa]
 
-fig_mapa = px.choropleth_mapbox(
+fig_mapa = px.choropleth_map(
     df, geojson=geojson, locations="Municipio", featureidkey="properties.name",
     color=col_mapa, color_continuous_scale="Viridis",
-    mapbox_style="carto-darkmatter", zoom=zoom_atual, center=centro_atual,
+    map_style="carto-darkmatter", zoom=zoom_atual, center=centro_atual,
     opacity=0.7, hover_name="Municipio",
     labels={col_mapa: metrica_mapa},
 )
@@ -197,7 +197,7 @@ fig_mapa.update_layout(
     paper_bgcolor="rgba(0,0,0,0)",
     uirevision=f"{cultura_sel}-{mun_sel}",
 )
-st.plotly_chart(fig_mapa, use_container_width=True)
+st.plotly_chart(fig_mapa, width='stretch')
 
 st.markdown("---")
 
@@ -229,7 +229,7 @@ with col_r1:
         showlegend=False,
     )
     fig_prod.update_traces(marker_color=top15_prod["cor_prod"].tolist())
-    st.plotly_chart(fig_prod, use_container_width=True)
+    st.plotly_chart(fig_prod, width='stretch')
 
 # Gráfico 2: Todos os municípios por Produtividade (colorido por acima/abaixo da média)
 with col_r2:
@@ -255,7 +255,7 @@ with col_r2:
         margin={"t": 40, "b": 0, "l": 0, "r": 0},
         showlegend=False,
     )
-    st.plotly_chart(fig_eff, use_container_width=True)
+    st.plotly_chart(fig_eff, width='stretch')
 
 st.caption(
     "Volume alto não significa eficiência alta — os dois rankings juntos mostram quem produz muito "
