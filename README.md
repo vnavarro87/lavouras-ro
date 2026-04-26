@@ -1,29 +1,39 @@
 # Lavouras de Rondônia
 
-Visualização interativa da produção agrícola nos 52 municípios de Rondônia, a partir de dados públicos do IBGE (Pesquisa Agrícola Municipal — PAM 2023).
+Rondônia é um dos estados com maior expansão agrícola do Brasil na última década, mas a produção municipal é pouco visível fora dos relatórios do IBGE — tabelas brutas que não mostram concentração regional, disparidade de produtividade entre municípios vizinhos ou o peso de cada cultura na economia local.
 
-Cobre quatro culturas: **Soja**, **Milho**, **Café** e **Cacau** — as principais lavouras do estado em volume, valor e relevância regional.
+Quis tornar esses dados navegáveis: qual município lidera em produtividade (não só em área), onde está o café de maior valor por tonelada, quais municípios produzem muito mas com produtividade abaixo da média estadual.
 
-Construído em Python com Streamlit e Plotly. Os dados são coletados automaticamente da API SIDRA, validados e renderizados em mapa coroplético com filtros por cultura e métrica.
+## Decisões de design
 
-## O que o projeto mostra
+**4 culturas, não todas as disponíveis no PAM**
+Soja, milho, café e cacau foram escolhidas por relevância econômica e regional — não por exaustividade. Incluir todas as culturas do PAM tornaria a navegação genérica demais para ser útil.
 
-- Mapa dos 52 municípios com seleção de cultura e métrica (quantidade, produtividade, valor)
-- KPIs estaduais ou por município selecionado
-- Top 10 produtores por cultura
-- Dispersão produção × produtividade com média estadual destacada
-- Contexto narrativo por cultura (por que ela importa em RO)
+**Mapa coroplético como visualização principal**
+Gráficos de barra mostram ranking; o mapa mostra padrão espacial. Para entender por que municípios vizinhos têm produtividades tão diferentes, a dimensão geográfica é insubstituível.
+
+**API SIDRA em vez de CSVs baixados manualmente**
+Reprodutibilidade: qualquer pessoa pode rodar `coleta_geral.py` e obter os mesmos dados, sem depender de arquivo que pode ficar desatualizado no repo.
+
+**Células com sigilo estatístico tratadas como zero**
+O IBGE suprime valores de municípios com poucos produtores para proteger dados individuais. A alternativa seria excluir esses municípios do mapa — mas isso criaria buracos visuais que seriam lidos como ausência de dado, não como sigilo. Optei por zero com nota explícita na metodologia.
+
+## Stack
+
+- **Python** + **Streamlit** + **Plotly**
+- **IBGE/SIDRA** — PAM 2023, tabelas 1612 (lavouras temporárias) e 1613 (lavouras permanentes)
+- Malha Municipal IBGE 2022
 
 ## Como rodar
 
 ```bash
-git clone https://github.com/vnavarro87/mapa-soja-ro.git
-cd mapa-soja-ro
+git clone https://github.com/vnavarro87/lavouras-ro.git
+cd lavouras-ro
 pip install -r requirements.txt
 streamlit run app.py
 ```
 
-Para reexecutar a coleta a partir do SIDRA:
+Para reexecutar a coleta do zero:
 
 ```bash
 python coleta_geral.py
@@ -44,30 +54,23 @@ mapa-soja-ro/
 └── README.md
 ```
 
-## Culturas e fontes
+## Limitações conhecidas
 
-| Cultura | Tabela SIDRA | Tipo |
-|---------|-------------|------|
-| Soja | 1612 | Lavoura temporária |
-| Milho | 1612 | Lavoura temporária |
-| Café | 1613 | Lavoura permanente |
-| Cacau | 1613 | Lavoura permanente |
+- **Área plantada ausente para café e cacau.** As tabelas de lavouras permanentes do PAM não separam área plantada da área em produção da mesma forma que as temporárias. Produtividade para essas culturas usa a métrica disponível, não o ideal.
 
-Período de referência: PAM 2023 (último ano fechado disponível).
-Geometria: Malha Municipal IBGE 2022.
+- **Sem desagregação intra-anual.** PAM é anual. Sazonalidade, colheita parcial e variação de preço ao longo do ano não estão capturados.
+
+- **Valores monetários em reais correntes.** Não há deflação. Comparações de valor entre anos diferentes exigiriam ajuste que não implementei.
+
+- **Células com sigilo estatístico aparecem como zero.** Municípios com poucos produtores têm dados suprimidos pelo IBGE. Estão mapeados como zero com nota na metodologia — não são ausência de produção.
 
 Detalhamento completo em [METODOLOGIA.md](METODOLOGIA.md).
 
-## Limitações conhecidas
-
-- Dados anuais — sem desagregação intra-anual
-- Café e Cacau não possuem dados de área plantada nas tabelas consultadas
-- Valores monetários em reais correntes do ano de referência
-- Células com sigilo estatístico tratadas como zero (ver METODOLOGIA.md)
-
 ## Sobre
 
-Projeto de portfólio com foco em dados públicos do agronegócio brasileiro. Objetivo: praticar pipeline ETL com API pública, visualização geoespacial e entrega reproduzível — sem prometer mais do que os dados permitem.
+Primeiro projeto de uma série sobre o agronegócio de Rondônia. A pergunta de partida era simples: onde está, de fato, a produção agrícola do estado — e quão diferente é um município do outro?
+
+Desenvolvido com apoio de Claude Code para acelerar implementação. Decisões de arquitetura, validação de fontes e tratamento de edge cases foram feitos por mim.
 
 ## Licença
 
