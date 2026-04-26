@@ -78,11 +78,9 @@ Primeiro projeto de uma série sobre o agronegócio de Rondônia. A pergunta de 
 
 Implementação acelerada com uso de Claude Code como copiloto. Definição do problema, escolha de fontes, decisões de arquitetura, validações de integridade e tratamento de edge cases conduzidos por mim.
 
-## Próximos passos
+## Limitações de escopo
 
-- Série temporal PAM 2018–2023 para visualizar tendência de expansão por cultura e município
-- Cruzamento com dados climáticos (INMET) para correlação produção × precipitação
-- Fase 2 do projeto Grãos de Rondônia: incorporar café conilon com dinâmica de preço própria
+Este projeto é deliberadamente limitado a um corte (PAM 2023, 4 culturas, RO) para entregar análise reproduzível e validada. Análises temporais e cruzamento climático são tratados como projetos separados.
 
 ## Licença
 
