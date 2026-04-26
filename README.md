@@ -15,6 +15,12 @@ Gráficos de barra mostram ranking; o mapa mostra padrão espacial. Para entende
 **API SIDRA em vez de CSVs baixados manualmente**
 Reprodutibilidade: qualquer pessoa pode rodar `coleta_geral.py` e obter os mesmos dados, sem depender de arquivo que pode ficar desatualizado no repo.
 
+**Plotly em vez de Folium para o mapa**
+Integração nativa com Streamlit sem necessidade de `st.components`. Renderização mais rápida para 52 municípios e consistência visual com os demais gráficos do app.
+
+**Coleta e validação em scripts separados**
+Permite rodar `validate_data.py` sem refazer o ETL. Útil para checar integridade depois de ajustes no tratamento sem custo de nova chamada à API.
+
 **Células com sigilo estatístico tratadas como zero**
 O IBGE suprime valores de municípios com poucos produtores para proteger dados individuais. A alternativa seria excluir esses municípios do mapa — mas isso criaria buracos visuais que seriam lidos como ausência de dado, não como sigilo. Optei por zero com nota explícita na metodologia.
 
@@ -70,7 +76,13 @@ Detalhamento completo em [METODOLOGIA.md](METODOLOGIA.md).
 
 Primeiro projeto de uma série sobre o agronegócio de Rondônia. A pergunta de partida era simples: onde está, de fato, a produção agrícola do estado — e quão diferente é um município do outro?
 
-Desenvolvido com apoio de Claude Code para acelerar implementação. Decisões de arquitetura, validação de fontes e tratamento de edge cases foram feitos por mim.
+Implementação acelerada com uso de Claude Code como copiloto. Definição do problema, escolha de fontes, decisões de arquitetura, validações de integridade e tratamento de edge cases conduzidos por mim.
+
+## Próximos passos
+
+- Série temporal PAM 2018–2023 para visualizar tendência de expansão por cultura e município
+- Cruzamento com dados climáticos (INMET) para correlação produção × precipitação
+- Fase 2 do projeto Grãos de Rondônia: incorporar café conilon com dinâmica de preço própria
 
 ## Licença
 
