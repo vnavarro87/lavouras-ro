@@ -43,7 +43,7 @@ python validate_data.py
 ## Estrutura
 
 ```
-mapa-soja-ro/
+lavouras-ro/
 ├── app.py                       # Aplicação Streamlit
 ├── coleta_geral.py              # ETL via API SIDRA
 ├── validate_data.py             # Asserções de integridade
