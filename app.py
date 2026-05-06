@@ -184,13 +184,33 @@ opcoes_mapa = {"Quantidade (t)": cfg["col_qtd"], "Produtividade (kg/ha)": cfg["c
 metrica_mapa = st.radio("Métrica:", list(opcoes_mapa.keys()), horizontal=True)
 col_mapa = opcoes_mapa[metrica_mapa]
 
-# Hover formatado por métrica (sem casas decimais nas unidades agrícolas)
-_unidade_hover = {
-    "Quantidade (t)":         ("t",       ",.0f"),
-    "Produtividade (kg/ha)":  ("kg/ha",   ",.0f"),
-    "Valor (R$ mil)":         ("R$ mil",  ",.0f"),
-}
-_unid, _fmt = _unidade_hover[metrica_mapa]
+# Hover: label curto (sem unidade entre parênteses) + valor pré-formatado em escala humana.
+# Produção e Valor adaptam escala (mil/Mi); Produtividade mantém kg/ha (não acumula).
+_label_curto = {
+    "Quantidade (t)":         "Produção",
+    "Produtividade (kg/ha)":  "Produtividade",
+    "Valor (R$ mil)":         "Valor",
+}[metrica_mapa]
+
+
+def _fmt_metrica(val, metrica):
+    if metrica == "Quantidade (t)":
+        if val >= 1_000_000:
+            return f"{val/1e6:,.2f} Mi t"
+        if val >= 1_000:
+            return f"{val/1e3:,.1f} mil t"
+        return f"{val:,.0f} t"
+    if metrica == "Produtividade (kg/ha)":
+        return f"{val:,.0f} kg/ha"
+    if metrica == "Valor (R$ mil)":
+        # CSV vem em R$ mil; converte conforme magnitude
+        if val >= 1_000_000:
+            return f"R$ {val/1e6:,.2f} Bi"  # mil × milhão = bilhão
+        if val >= 1_000:
+            return f"R$ {val/1e3:,.1f} Mi"  # mil × mil = milhão
+        return f"R$ {val:,.0f} mil"
+    return f"{val:,.0f}"
+
 
 # Separa produtores e não-produtores da cultura selecionada
 df_prod = df[df[col_mapa] > 0].copy()
@@ -222,6 +242,11 @@ if not df_prod.empty:
     _line_widths = [2.5 if m == _highlight else 0.7 for m in df_prod["Municipio"]]
     _line_colors = ["#ffffff" if m == _highlight else "rgba(255,255,255,0.6)"
                     for m in df_prod["Municipio"]]
+    # customdata: [município, valor_formatado] — pré-formatado em PT-BR / escala humana
+    _hover_customdata = [
+        [m, _fmt_metrica(v, metrica_mapa)]
+        for m, v in zip(df_prod["Municipio"], df_prod[col_mapa])
+    ]
     fig_mapa.add_trace(go.Choroplethmap(
         geojson=geojson,
         locations=df_prod["Municipio"],
@@ -231,11 +256,11 @@ if not df_prod.empty:
         marker_line_color=_line_colors,
         marker_line_width=_line_widths,
         marker_opacity=0.85,
-        customdata=df_prod["Municipio"],
+        customdata=_hover_customdata,
         hovertemplate=(
-            f"<b>%{{customdata}}</b><br>{metrica_mapa}: %{{z:{_fmt}}} {_unid}<extra></extra>"
+            f"<b>%{{customdata[0]}}</b><br>{_label_curto}: %{{customdata[1]}}<extra></extra>"
         ),
-        colorbar=dict(title=metrica_mapa, tickformat=_fmt),
+        colorbar=dict(title=metrica_mapa),
         name="",
     ))
 
