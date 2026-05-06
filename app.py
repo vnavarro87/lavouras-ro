@@ -180,7 +180,7 @@ st.markdown("---")
 # --- MAPA ---
 st.subheader(f"Distribuição de {cultura_sel} por município")
 
-opcoes_mapa = {"Quantidade (t)": cfg["col_qtd"], "Produtividade (kg/ha)": cfg["col_prod"], "Valor (R$ mil)": cfg["col_valor"]}
+opcoes_mapa = {"Quantidade (t)": cfg["col_qtd"], "Produtividade (kg/ha)": cfg["col_prod"], "Valor (R$)": cfg["col_valor"]}
 metrica_mapa = st.radio("Métrica:", list(opcoes_mapa.keys()), horizontal=True)
 col_mapa = opcoes_mapa[metrica_mapa]
 
@@ -189,7 +189,7 @@ col_mapa = opcoes_mapa[metrica_mapa]
 _label_curto = {
     "Quantidade (t)":         "Produção",
     "Produtividade (kg/ha)":  "Produtividade",
-    "Valor (R$ mil)":         "Valor",
+    "Valor (R$)":             "Valor",
 }[metrica_mapa]
 
 
@@ -202,8 +202,8 @@ def _fmt_metrica(val, metrica):
         return f"{val:,.0f} t"
     if metrica == "Produtividade (kg/ha)":
         return f"{val:,.0f} kg/ha"
-    if metrica == "Valor (R$ mil)":
-        # CSV vem em R$ mil; converte conforme magnitude
+    if metrica == "Valor (R$)":
+        # CSV armazena em R$ mil; converte conforme magnitude
         if val >= 1_000_000:
             return f"R$ {val/1e6:,.2f} Bi"  # mil × milhão = bilhão
         if val >= 1_000:
