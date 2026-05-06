@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 import json
 import os
 
@@ -183,21 +184,71 @@ opcoes_mapa = {"Quantidade (t)": cfg["col_qtd"], "Produtividade (kg/ha)": cfg["c
 metrica_mapa = st.radio("Métrica:", list(opcoes_mapa.keys()), horizontal=True)
 col_mapa = opcoes_mapa[metrica_mapa]
 
-fig_mapa = px.choropleth_map(
-    df, geojson=geojson, locations="Municipio", featureidkey="properties.name",
-    color=col_mapa, color_continuous_scale="Viridis",
-    map_style="carto-darkmatter", zoom=zoom_atual, center=centro_atual,
-    opacity=0.7, hover_name="Municipio",
-    labels={col_mapa: metrica_mapa},
-)
-if mun_sel != "Rondônia (todos)":
-    fig_mapa.update_traces(marker_line_width=2, marker_line_color="white")
+# Hover formatado por métrica (sem casas decimais nas unidades agrícolas)
+_unidade_hover = {
+    "Quantidade (t)":         ("t",       ",.0f"),
+    "Produtividade (kg/ha)":  ("kg/ha",   ",.0f"),
+    "Valor (R$ mil)":         ("R$ mil",  ",.0f"),
+}
+_unid, _fmt = _unidade_hover[metrica_mapa]
+
+# Separa produtores e não-produtores da cultura selecionada
+df_prod = df[df[col_mapa] > 0].copy()
+df_nao_prod = df[df[col_mapa] == 0].copy()
+
+# Camada 1: silhueta cinza de RO (todos os municípios sem produção)
+fig_mapa = go.Figure()
+if not df_nao_prod.empty:
+    fig_mapa.add_trace(go.Choroplethmap(
+        geojson=geojson,
+        locations=df_nao_prod["Municipio"],
+        featureidkey="properties.name",
+        z=[1] * len(df_nao_prod),
+        colorscale=[[0, "#3a3f4f"], [1, "#3a3f4f"]],
+        showscale=False,
+        marker_line_color="rgba(255,255,255,0.5)",
+        marker_line_width=0.7,
+        marker_opacity=0.85,
+        customdata=df_nao_prod["Municipio"].apply(
+            lambda m: f"<b>{m}</b><br>Sem produção registrada de {cultura_sel.lower()}"
+        ),
+        hovertemplate="%{customdata}<extra></extra>",
+        name="",
+    ))
+
+# Camada 2: produtores com escala Viridis
+if not df_prod.empty:
+    _highlight = mun_sel if mun_sel != "Rondônia (todos)" else None
+    _line_widths = [2.5 if m == _highlight else 0.7 for m in df_prod["Municipio"]]
+    _line_colors = ["#ffffff" if m == _highlight else "rgba(255,255,255,0.6)"
+                    for m in df_prod["Municipio"]]
+    fig_mapa.add_trace(go.Choroplethmap(
+        geojson=geojson,
+        locations=df_prod["Municipio"],
+        featureidkey="properties.name",
+        z=df_prod[col_mapa],
+        colorscale="Viridis",
+        marker_line_color=_line_colors,
+        marker_line_width=_line_widths,
+        marker_opacity=0.85,
+        customdata=df_prod["Municipio"],
+        hovertemplate=(
+            f"<b>%{{customdata}}</b><br>{metrica_mapa}: %{{z:{_fmt}}} {_unid}<extra></extra>"
+        ),
+        colorbar=dict(title=metrica_mapa, tickformat=_fmt),
+        name="",
+    ))
+
 fig_mapa.update_layout(
+    map_style="carto-darkmatter",
+    map_zoom=zoom_atual,
+    map_center=centro_atual,
     margin={"r": 0, "t": 0, "l": 0, "b": 0},
     paper_bgcolor="rgba(0,0,0,0)",
     uirevision=f"{cultura_sel}-{mun_sel}",
+    hoverlabel=dict(bgcolor="#1e2130", bordercolor="#00d26a", font=dict(color="#ffffff")),
 )
-st.plotly_chart(fig_mapa, width='stretch')
+st.plotly_chart(fig_mapa, width='stretch', config={'displayModeBar': False})
 
 st.markdown("---")
 
@@ -227,9 +278,13 @@ with col_r1:
         title_font_size=14,
         margin={"t": 40, "b": 0, "l": 0, "r": 0},
         showlegend=False,
+        hoverlabel=dict(bgcolor="#1e2130", bordercolor="#00d26a", font=dict(color="#ffffff")),
     )
-    fig_prod.update_traces(marker_color=top15_prod["cor_prod"].tolist())
-    st.plotly_chart(fig_prod, width='stretch')
+    fig_prod.update_traces(
+        marker_color=top15_prod["cor_prod"].tolist(),
+        hovertemplate="<b>%{y}</b><br>Produção: %{x:,.0f} t<extra></extra>",
+    )
+    st.plotly_chart(fig_prod, width='stretch', config={'displayModeBar': False})
 
 # Gráfico 2: Todos os municípios por Produtividade (colorido por acima/abaixo da média)
 with col_r2:
@@ -254,8 +309,12 @@ with col_r2:
         title_font_size=14,
         margin={"t": 40, "b": 0, "l": 0, "r": 0},
         showlegend=False,
+        hoverlabel=dict(bgcolor="#1e2130", bordercolor="#00d26a", font=dict(color="#ffffff")),
     )
-    st.plotly_chart(fig_eff, width='stretch')
+    fig_eff.update_traces(
+        hovertemplate="<b>%{y}</b><br>Produtividade: %{x:,.0f} kg/ha<extra></extra>",
+    )
+    st.plotly_chart(fig_eff, width='stretch', config={'displayModeBar': False})
 
 st.caption(
     "Volume alto não significa eficiência alta — os dois rankings juntos mostram quem produz muito "
