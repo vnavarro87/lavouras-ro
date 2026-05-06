@@ -289,6 +289,20 @@ with col_r1:
 # Gráfico 2: Todos os municípios por Produtividade (colorido por acima/abaixo da média)
 with col_r2:
     top15_eff = df_rank[df_rank[cfg["col_prod"]] > 0].sort_values(cfg["col_prod"])
+    n_acima = int((top15_eff[cfg["col_prod"]] >= media_prod).sum())
+    n_total = len(top15_eff)
+
+    # Indicador visual da média (chip discreto acima do gráfico — substitui linha vertical feia)
+    st.markdown(
+        f'<div style="background:#1e2130;border-left:3px solid #ffbd45;padding:8px 12px;'
+        f'border-radius:4px;font-size:13px;color:#d0d4dc;margin-bottom:6px;">'
+        f'Média estadual: <b style="color:#ffbd45">{media_prod:,.0f} kg/ha</b> · '
+        f'<span style="color:#00d26a">{n_acima}</span> acima · '
+        f'<span style="color:#9ca3af">{n_total - n_acima}</span> abaixo'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
+
     fig_eff = px.bar(
         top15_eff, x=cfg["col_prod"], y="Municipio", orientation="h",
         labels={cfg["col_prod"]: "Produtividade (kg/ha)", "Municipio": ""},
@@ -296,11 +310,9 @@ with col_r2:
         color="cor_prod",
         color_discrete_map="identity",
     )
+    # Linha de referência sutil (sólida fina amarela, sem annotation embutida — está no chip acima)
     fig_eff.add_vline(
-        x=media_prod, line_dash="dash", line_color="white",
-        annotation_text=f"Média: {media_prod:,.0f} kg/ha",
-        annotation_position="top right",
-        annotation_font_color="white",
+        x=media_prod, line_color="#ffbd45", line_width=1.5, opacity=0.7,
     )
     fig_eff.update_layout(
         paper_bgcolor="rgba(0,0,0,0)",
