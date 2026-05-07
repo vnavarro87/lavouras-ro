@@ -88,7 +88,7 @@ lavouras-ro/
 
 - **Valores monetários em reais correntes.** Não há deflação. Comparações de valor entre anos diferentes exigiriam ajuste que não implementei.
 
-- **Células com sigilo estatístico aparecem como zero.** Municípios com poucos produtores têm dados suprimidos pelo IBGE para preservar identidade individual. No CSV atual, sigilo é indistinguível de zero verdadeiro — TODO documentado no `coleta_geral.py` para refatorar o pipeline e gerar um arquivo `sigilo_ro.csv` separado. A legenda do mapa avisa explicitamente sobre essa ambiguidade.
+- **Células com sigilo estatístico aparecem como zero.** Municípios com poucos produtores têm dados suprimidos pelo IBGE para preservar identidade individual. No CSV consolidado, sigilo é indistinguível de zero verdadeiro — a legenda do mapa explicita essa ambiguidade ("cinza = sem produção registrada ou sob sigilo estatístico").
 
 - **Preço médio implícito ≠ preço de mercado.** O preço R$/t exibido vem de Valor PAM ÷ Quantidade — é referência IBGE, agregada anual. Não é preço spot recebido em uma negociação específica.
 
