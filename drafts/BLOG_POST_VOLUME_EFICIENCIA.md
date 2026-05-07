@@ -2,7 +2,7 @@
 
 ## TL;DR
 
-O município que mais produz café em Rondônia **não é o que produz melhor**. As duas listas — top em volume vs top em produtividade — quase não se sobrepõem. Mostro por quê e o que isso muda na prática para compradores, produtores e formuladores de política agrícola.
+O município que mais produz café em Rondônia **quase nunca é o que produz melhor**. As duas listas — top em volume vs top em produtividade — se sobrepõem em apenas 1 município (Nova Brasilândia D'Oeste). Mostro por quê e o que isso muda na prática para compradores, produtores e formuladores de política agrícola. Café é Coffea canephora (conilon).
 
 ---
 
@@ -14,23 +14,23 @@ Mas tem outro recorte. Quem **produz mais** e quem **produz melhor** são listas
 
 Pegando os dados oficiais do IBGE-PAM 2023 e olhando os dois ranqueamentos lado a lado:
 
-### Top 5 em Produção (volume total — toneladas)
+### Top 5 em Produção de café (volume — toneladas, IBGE-PAM 2023)
 
-1. **Cacoal** — concentração histórica
-2. **São Miguel do Guaporé**
-3. **Alta Floresta D'Oeste**
-4. **Nova Brasilândia D'Oeste**
-5. **Buritis**
+1. **Nova Brasilândia D'Oeste** — 27.683 t (4.012 kg/ha)
+2. **Cacoal** — 17.664 t (3.540 kg/ha)
+3. **São Miguel do Guaporé** — 16.094 t (3.855 kg/ha)
+4. **Alta Floresta D'Oeste** — 15.362 t (3.788 kg/ha)
+5. **Alto Alegre dos Parecis** — 15.351 t (3.755 kg/ha)
 
-### Top 5 em Produtividade (kg/ha)
+### Top 5 em Produtividade de café (kg/ha, com produção mínima relevante)
 
-1. **Vale do Anari** — quase nenhum volume nacional, mas eficiência altíssima
-2. **Cabixi**
-3. **Castanheiras**
-4. **Ouro Preto do Oeste**
-5. **Theobroma**
+1. **Candeias do Jamari** — 4.249 kg/ha (837 t)
+2. **Alvorada D'Oeste** — 4.181 kg/ha (5.394 t)
+3. **Mirante da Serra** — 4.174 kg/ha (1.920 t)
+4. **São Francisco do Guaporé** — 4.109 kg/ha (3.217 t)
+5. **Presidente Médici** — 4.015 kg/ha (1.064 t)
 
-**Quase nenhum município aparece nas duas listas.**
+**Apenas Nova Brasilândia D'Oeste se destaca em ambas as dimensões** (volume alto e produtividade acima da média). O resto dos municípios fica em uma lista ou outra — quase nunca nas duas.
 
 ---
 
@@ -38,21 +38,21 @@ Pegando os dados oficiais do IBGE-PAM 2023 e olhando os dois ranqueamentos lado 
 
 O café conilon em Rondônia opera em **dois regimes simultâneos** que produzem o mesmo grão por caminhos diferentes:
 
-### Regime 1 — Volume (Cacoal, São Miguel, Alta Floresta)
+### Regime 1 — Volume (Nova Brasilândia, Cacoal, São Miguel)
 
 - Cinturão histórico do conilon em RO
 - Áreas plantadas grandes (milhares de hectares por município)
-- **Produtividade média** — mistura propriedades modernas e tradicionais
+- Produtividade entre 3.500 e 4.000 kg/ha — **acima da média nacional para conilon**, mas mistura propriedades modernas e tradicionais
 - Forte tradição familiar, várias gerações na cultura
 - Logística estruturada, cooperativas grandes
 
-### Regime 2 — Eficiência (Vale do Anari, Cabixi, Castanheiras)
+### Regime 2 — Eficiência (Candeias do Jamari, Alvorada D'Oeste, Mirante da Serra)
 
-- Áreas plantadas menores (centenas de hectares)
+- Volumes intermediários (centenas a poucos milhares de toneladas)
 - Adoção de **clonagem, irrigação, manejo nutricional intensivo**
 - Lavouras mais novas, replantadas com material genético elite
-- Produtividade até 50% acima da média estadual
-- "Fazem mais com menos"
+- Produtividade na faixa 4.100–4.250 kg/ha — topo do conilon brasileiro
+- "Fazem mais com menos área"
 
 ---
 
@@ -125,9 +125,9 @@ Estudando MBA em Data Science, IA & Analytics
 
 ## Notas para Publicação
 
+- [x] **Nomes dos top 5 validados contra IBGE-PAM 2023** (2026-05-06)
 - [ ] Inserir screenshot dos dois rankings lado a lado (gráfico do app, café selecionado)
-- [ ] Validar nomes nos top 5 com dado IBGE atualizado antes de publicar (rodar `validar_dados.py` se aplicável)
 - [ ] Considerar versão curta (~3 min) para LinkedIn e completa (~6 min) para Medium
 - [ ] Sugestão de headline alternativa para LinkedIn:
   - "Em Rondônia, o município que mais produz café não é o que produz melhor — e isso muda a estratégia de quem compra"
-- [ ] Tags sugeridas: #agronegocio #rondonia #cafe #datascience #produtividade
+- [ ] Tags sugeridas: #agronegocio #rondonia #cafe #datascience #produtividade #conilon

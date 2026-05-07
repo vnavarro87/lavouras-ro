@@ -175,6 +175,22 @@ if cfg["col_area"]:
     with kpi_cols[3]:
         st.metric("Área plantada", f"{area/1e3:,.1f} mil ha")
 
+# Preço médio recebido — calculado direto do PAM (Valor R$ mil ÷ Quantidade t × 1000)
+# Único caso onde IBGE permite estimar preço sem fonte externa: a divisão entre as
+# duas variáveis publicadas dá o preço médio implícito daquela cultura no agregado.
+if producao > 0:
+    preco_medio_t = (valor * 1_000) / producao
+    st.markdown(
+        f'<div style="background:#1e2130;border-left:3px solid #00d26a;padding:8px 12px;'
+        f'border-radius:4px;font-size:13px;color:#d0d4dc;margin:8px 0;">'
+        f"Preço médio implícito recebido em "
+        f"<b>{mun_sel if mun_sel != 'Rondônia (todos)' else 'Rondônia'}</b>: "
+        f'<b style="color:#00d26a">R$ {preco_medio_t:,.0f}/t</b> '
+        f"<span style='color:#9ca3af'>(Valor PAM ÷ Quantidade — referência IBGE, não preço spot)</span>"
+        f'</div>',
+        unsafe_allow_html=True,
+    )
+
 st.markdown("---")
 
 # --- MAPA ---
@@ -277,23 +293,38 @@ st.plotly_chart(fig_mapa, width='stretch', config={'displayModeBar': False})
 
 st.markdown("---")
 
-# --- RANKINGS ---
-st.subheader("Análise de Performance")
-col_r1, col_r2 = st.columns(2)
+# --- VOLUME × PRODUTIVIDADE ---
+st.subheader("Volume × Produtividade")
 
 df_rank = df[df[cfg["col_qtd"]] > 0].copy()
-media_prod = df[df[cfg["col_prod"]] > 0][cfg["col_prod"]].mean()
+df_rank_prod = df_rank[df_rank[cfg["col_prod"]] > 0].copy()
+
+# Filtro de relevância para ranking de produtividade: produção residual (< 5% da
+# produção total estadual da cultura, com piso de 50 t) é excluída do ranking
+# de eficiência. Sem isso, município com 2 t e 2.000 kg/ha aparece como #1
+# em produtividade, distorcendo a leitura.
+total_estadual = df_rank[cfg["col_qtd"]].sum()
+piso_relevancia = max(50.0, total_estadual * 0.005)  # 0,5% do total ou 50 t
+df_rank_eff = df_rank_prod[df_rank_prod[cfg["col_qtd"]] >= piso_relevancia].copy()
+n_excluidos = len(df_rank_prod) - len(df_rank_eff)
+
+media_prod = df_rank_eff[cfg["col_prod"]].mean() if not df_rank_eff.empty else 0
 df_rank["cor_prod"] = df_rank[cfg["col_prod"]].apply(
     lambda v: "#00d26a" if v >= media_prod else "#6b7280"
 )
+df_rank_eff["cor_prod"] = df_rank_eff[cfg["col_prod"]].apply(
+    lambda v: "#00d26a" if v >= media_prod else "#6b7280"
+)
 
-# Gráfico 1: Top 15 por Produção
+col_r1, col_r2 = st.columns(2)
+
+# Gráfico 1: Quem mais produz (volume) — todos os produtores (não só top 15)
 with col_r1:
-    top15_prod = df_rank.nlargest(15, cfg["col_qtd"]).sort_values(cfg["col_qtd"])
+    df_top_prod = df_rank.sort_values(cfg["col_qtd"])
     fig_prod = px.bar(
-        top15_prod, x=cfg["col_qtd"], y="Municipio", orientation="h",
+        df_top_prod, x=cfg["col_qtd"], y="Municipio", orientation="h",
         labels={cfg["col_qtd"]: "Produção (t)", "Municipio": ""},
-        title=f"Quem mais produz — {cultura_sel}",
+        title=f"Quem mais produz — {cultura_sel} ({len(df_top_prod)} municípios)",
         color_discrete_sequence=["#00d26a"],
     )
     fig_prod.update_layout(
@@ -304,38 +335,42 @@ with col_r1:
         margin={"t": 40, "b": 0, "l": 0, "r": 0},
         showlegend=False,
         hoverlabel=dict(bgcolor="#1e2130", bordercolor="#00d26a", font=dict(color="#ffffff")),
+        height=max(380, len(df_top_prod) * 22),
     )
     fig_prod.update_traces(
-        marker_color=top15_prod["cor_prod"].tolist(),
+        marker_color=df_top_prod["cor_prod"].tolist(),
         hovertemplate="<b>%{y}</b><br>Produção: %{x:,.0f} t<extra></extra>",
     )
     st.plotly_chart(fig_prod, width='stretch', config={'displayModeBar': False})
 
-# Gráfico 2: Todos os municípios por Produtividade (colorido por acima/abaixo da média)
+# Gráfico 2: Quem produz melhor (kg/ha) — apenas com produção relevante
 with col_r2:
-    top15_eff = df_rank[df_rank[cfg["col_prod"]] > 0].sort_values(cfg["col_prod"])
-    n_acima = int((top15_eff[cfg["col_prod"]] >= media_prod).sum())
-    n_total = len(top15_eff)
+    df_top_eff = df_rank_eff.sort_values(cfg["col_prod"])
+    n_acima = int((df_top_eff[cfg["col_prod"]] >= media_prod).sum())
+    n_total = len(df_top_eff)
 
-    # Indicador visual da média (chip discreto acima do gráfico — substitui linha vertical feia)
+    aviso_filtro = (
+        f" · {n_excluidos} excluído(s) por produção &lt; {piso_relevancia:,.0f} t"
+        if n_excluidos > 0 else ""
+    )
     st.markdown(
         f'<div style="background:#1e2130;border-left:3px solid #ffbd45;padding:8px 12px;'
         f'border-radius:4px;font-size:13px;color:#d0d4dc;margin-bottom:6px;">'
         f'Média estadual: <b style="color:#ffbd45">{media_prod:,.0f} kg/ha</b> · '
         f'<span style="color:#00d26a">{n_acima}</span> acima · '
         f'<span style="color:#9ca3af">{n_total - n_acima}</span> abaixo'
+        f'{aviso_filtro}'
         f'</div>',
         unsafe_allow_html=True,
     )
 
     fig_eff = px.bar(
-        top15_eff, x=cfg["col_prod"], y="Municipio", orientation="h",
+        df_top_eff, x=cfg["col_prod"], y="Municipio", orientation="h",
         labels={cfg["col_prod"]: "Produtividade (kg/ha)", "Municipio": ""},
-        title=f"Quem produz melhor (kg/ha) — {cultura_sel}",
+        title=f"Quem produz melhor (kg/ha) — {cultura_sel} ({n_total} municípios)",
         color="cor_prod",
         color_discrete_map="identity",
     )
-    # Linha de referência sutil (sólida fina amarela, sem annotation embutida — está no chip acima)
     fig_eff.add_vline(
         x=media_prod, line_color="#ffbd45", line_width=1.5, opacity=0.7,
     )
@@ -347,6 +382,7 @@ with col_r2:
         margin={"t": 40, "b": 0, "l": 0, "r": 0},
         showlegend=False,
         hoverlabel=dict(bgcolor="#1e2130", bordercolor="#00d26a", font=dict(color="#ffffff")),
+        height=max(380, n_total * 22),
     )
     fig_eff.update_traces(
         hovertemplate="<b>%{y}</b><br>Produtividade: %{x:,.0f} kg/ha<extra></extra>",
@@ -355,7 +391,9 @@ with col_r2:
 
 st.caption(
     "Volume alto não significa eficiência alta — os dois rankings juntos mostram quem produz muito "
-    "e quem produz bem. Verde = acima da média estadual de produtividade."
+    "e quem produz bem. Verde = acima da média estadual de produtividade. "
+    f"Para evitar distorção do ranking de produtividade por município com produção residual, "
+    f"o corte de relevância é {piso_relevancia:,.0f} t (0,5% da produção total estadual ou 50 t, o maior)."
 )
 
 st.markdown("---")

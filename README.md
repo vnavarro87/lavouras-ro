@@ -2,7 +2,16 @@
 
 Rondônia é um dos estados com maior expansão agrícola do Brasil na última década, mas a produção municipal é pouco visível fora dos relatórios do IBGE — tabelas brutas que não mostram concentração regional, disparidade de produtividade entre municípios vizinhos ou o peso de cada cultura na economia local.
 
-Quis tornar esses dados navegáveis: qual município lidera em produtividade (não só em área), onde está o café de maior valor por tonelada, quais municípios produzem muito mas com produtividade abaixo da média estadual.
+Quis tornar esses dados navegáveis: qual município lidera em produtividade (não só em volume), qual o **preço médio implícito recebido** (R$/t) por município, quais municípios produzem muito mas com produtividade abaixo da média estadual.
+
+## Relação com outros projetos
+
+Este é o **panorama estático** do agro de Rondônia (PAM-IBGE 2023, anual, descritivo). Para análise de **risco de receita** com preço internacional e câmbio, ver [soja-milho-ro](https://github.com/vnavarro87/soja-milho-ro) — projeto irmão que cobre soja e milho com cotações CBOT, PTAX e basis municipal.
+
+| Projeto | Pergunta que responde | Frequência |
+|---------|----------------------|------------|
+| **lavouras-ro** (este) | Onde está a produção, quem produz bem, qual preço médio | Anual (PAM) |
+| **soja-milho-ro** | Quanto vale a produção hoje, em quanto está o break-even, qual o risco cambial | Diária (CBOT/PTAX) |
 
 ## Decisões de design
 
@@ -46,6 +55,17 @@ python coleta_geral.py
 python validate_data.py
 ```
 
+## Validação de dados
+
+Cada número é defensável pela identidade física **Quantidade ≈ Área × Produtividade** (apenas para soja/milho — PAM 1613 não publica área plantada de lavouras permanentes na mesma estrutura). O script `validate_data.py` roda 4 níveis de checagem:
+
+1. **Estrutural** — 52 municípios, sem duplicatas, sem negativos, match CSV ↔ GeoJSON
+2. **Consistência interna** — Quantidade ≈ Área × Produtividade (tolerância 12%, cobre Área Plantada vs. Área Colhida)
+3. **Produtividade plausível** — soja 2,5–4,5 / milho 1,5–6,5 / café 0,8–5,0 / cacau 0,3–2,5 t/ha
+4. **Coerência cruzada** — Quantidade > 0 ↔ Valor > 0 (não pode haver produção sem registro de valor monetário)
+
+Saída em formato CI-friendly (exit code 0 = aprovado; 1 = violação com município identificado). Quando o IBGE publicar PAM 2024, basta rerodar.
+
 ## Estrutura
 
 ```
@@ -64,11 +84,15 @@ lavouras-ro/
 
 - **Área plantada ausente para café e cacau.** As tabelas de lavouras permanentes do PAM não separam área plantada da área em produção da mesma forma que as temporárias. Produtividade para essas culturas usa a métrica disponível, não o ideal.
 
-- **Sem desagregação intra-anual.** PAM é anual. Sazonalidade, colheita parcial e variação de preço ao longo do ano não estão capturados.
+- **Sem desagregação intra-anual.** PAM é anual. Sazonalidade, colheita parcial e variação de preço ao longo do ano não estão capturados — para risco e timing, ver [soja-milho-ro](https://github.com/vnavarro87/soja-milho-ro).
 
 - **Valores monetários em reais correntes.** Não há deflação. Comparações de valor entre anos diferentes exigiriam ajuste que não implementei.
 
 - **Células com sigilo estatístico aparecem como zero.** Municípios com poucos produtores têm dados suprimidos pelo IBGE. Estão mapeados como zero com nota na metodologia — não são ausência de produção.
+
+- **Preço médio implícito ≠ preço de mercado.** O preço R$/t exibido vem de Valor PAM ÷ Quantidade — é referência IBGE, agregada anual. Não é preço spot recebido em uma negociação específica.
+
+- **Ranking de produtividade tem corte mínimo de relevância.** Município com produção residual (< 0,5% do total estadual ou < 50 t) é excluído do ranking de eficiência — sem isso, um município com 2 t e produtividade alta apareceria como referência, distorcendo a leitura.
 
 Detalhamento completo em [METODOLOGIA.md](METODOLOGIA.md).
 
