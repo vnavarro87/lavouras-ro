@@ -25,7 +25,9 @@ METRICAS = {
 # "-"   = fenômeno não existe
 # ".."  = não se aplica
 # "..." = dado não disponível
-# "X"   = dado omitido (sigilo)
+# "X"   = dado omitido por sigilo estatístico (município com poucos produtores)
+# TODO: refatorar pipeline para preservar flag de sigilo (gerar sigilo_ro.csv).
+# Hoje todos viram 0 no CSV master, sem distinguir sigilo de zero verdadeiro.
 CODIGOS_ESPECIAIS = {"-", "..", "...", "X"}
 
 
